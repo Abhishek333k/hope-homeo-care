@@ -181,19 +181,21 @@ async function loadBloggerFeed() {
 }
 
 async function loadGoogleReviews() {
-    const scroller = document.getElementById('review-scroller');
-    if (!scroller) return;
+    const grid = document.getElementById('testimonials-grid');
+    if (!grid) return;
+
+    const fallbackHTML = '<div class="text-center w-full py-8 text-slate-500 col-span-1 md:col-span-3">Real patient reviews are currently being synced from Google.</div>';
 
     try {
         const response = await fetch('./assets/data/reviews.json');
         if (!response.ok) {
-            scroller.innerHTML = '<div class="text-center w-full py-8 text-slate-500 flex-shrink-0" style="width: 100vw;">Reviews currently unavailable.</div>';
+            grid.innerHTML = fallbackHTML;
             return;
         }
         
         const reviews = await response.json();
         if (!reviews || reviews.length === 0) {
-            scroller.innerHTML = '<div class="text-center w-full py-8 text-slate-500 flex-shrink-0" style="width: 100vw;">No reviews found.</div>';
+            grid.innerHTML = fallbackHTML;
             return;
         }
 
@@ -201,7 +203,7 @@ async function loadGoogleReviews() {
 
         const reviewCards = reviews.map(review => {
             return `
-                <div class="testimonial-card w-80 flex-shrink-0 bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <div class="testimonial-card w-full flex-shrink-0 bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex mb-4">
                         ${Array(review.rating).fill(starSvg).join('')}
                     </div>
@@ -217,10 +219,10 @@ async function loadGoogleReviews() {
             `;
         });
 
-        // Duplicate the cards for seamless marquee effect
-        scroller.innerHTML = [...reviewCards, ...reviewCards].join('');
+        grid.innerHTML = reviewCards.join('');
     } catch (error) {
         console.error("Reviews load error:", error);
+        grid.innerHTML = fallbackHTML;
     }
 }
 
