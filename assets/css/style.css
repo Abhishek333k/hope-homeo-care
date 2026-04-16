@@ -1,0 +1,14 @@
+/* 
+  Custom styles for Hope Homeo Care.
+  Most styling is handled by Tailwind CSS classes. 
+  Add any custom rules, external plugin overrides, or scrollbar styling here. 
+*/
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Prevent horizontal scroll under certain constrained viewports */
+  overflow-x: hidden;
+}
