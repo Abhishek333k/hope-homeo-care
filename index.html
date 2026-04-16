@@ -629,6 +629,15 @@
         </div>
     </div>
 
+    <div id="campaign-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="relative max-w-md w-full mx-4 shadow-2xl rounded-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="campaign-box">
+            <button id="close-campaign-btn" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors z-10 backdrop-blur-md">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <img id="campaign-image" src="" alt="Clinic Announcement" class="w-full h-auto object-cover max-h-[70vh]">
+        </div>
+    </div>
+
     <script type="module" src="assets/js/main.js"></script>
 </body>
 

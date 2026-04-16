@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -326,5 +326,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+async function loadActiveCampaign() {
+    // UX Check: Don't show again if they already closed it this session
+    if (sessionStorage.getItem('campaignSeen')) return;
+
+    try {
+        // Fetch campaigns marked as active to prevent scanning old data
+        const q = query(collection(db, "campaigns"), where("status", "==", "active"));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) return;
+
+        const now = new Date();
+        let activeCampaign = null;
+
+        // Check which campaign falls exactly within the current time window
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.startTime && data.endTime) {
+                const start = data.startTime.toDate();
+                const end = data.endTime.toDate();
+                
+                if (now >= start && now <= end) {
+                    activeCampaign = data;
+                }
+            }
+        });
+
+        // Render the campaign if a valid one exists
+        if (activeCampaign && activeCampaign.imageUrl) {
+            const modal = document.getElementById('campaign-modal');
+            const img = document.getElementById('campaign-image');
+            const box = document.getElementById('campaign-box');
+            const closeBtn = document.getElementById('close-campaign-btn');
+
+            img.src = activeCampaign.imageUrl;
+            
+            // Smooth fade-in animation
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 50);
+
+            // Close logic
+            const closeModal = () => {
+                modal.classList.add('opacity-0');
+                box.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+                sessionStorage.setItem('campaignSeen', 'true'); // Lock it for this session
+            };
+
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+    } catch (error) {
+        console.error("Failed to load campaign:", error);
+    }
+}
+
+// Call functions on load
 loadBloggerFeed();
 loadGoogleReviews();
+loadActiveCampaign();
