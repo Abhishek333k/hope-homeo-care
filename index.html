@@ -5,10 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hope Homeo Care - Holistic Healing</title>
-    <meta name="description" content="Hope Homeo Care in Mangalagiri offers holistic healing, combining physiological homeopathy with expert counselling by Dr. K. Nikhil Joshua.">
+    <meta name="description"
+        content="Hope Homeo Care in Mangalagiri offers holistic healing, combining physiological homeopathy with expert counselling by Dr. K. Nikhil Joshua.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -74,6 +77,7 @@
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
+
         .hide-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
@@ -309,10 +313,14 @@
         </div>
 
         <div class="max-w-7xl mx-auto pb-8">
-            <div id="testimonials-grid" class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 hide-scrollbar px-4">
-                <div class="text-center w-full py-12 text-teal-700 font-semibold animate-pulse shrink-0">Loading reviews...</div>
+            <div id="testimonials-grid"
+                class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 hide-scrollbar px-4">
+                <div class="text-center w-full py-12 text-teal-700 font-semibold animate-pulse shrink-0">Loading
+                    reviews...</div>
             </div>
-            <div class="text-center mt-4"><button id="view-all-reviews-btn" class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors">View All Reviews</button></div>
+            <div class="text-center mt-4"><button id="view-all-reviews-btn"
+                    class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors">View
+                    All Reviews</button></div>
         </div>
 
         <div class="max-w-4xl mx-auto px-4 mt-12 text-center">
@@ -325,32 +333,48 @@
     <section id="gallery" class="py-20 bg-slate-50 relative overflow-hidden text-center">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <h2 class="text-3xl md:text-4xl font-bold text-teal-900 mb-12">Clinic Gallery</h2>
-            
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 <!-- 8 Frosted Glass Cards with CSS Lightbox Faux Effect -->
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Clinic Area" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Clinic Area"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Consultation Room" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Consultation Room"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Therapy Space" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Therapy Space"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Medicine Dispensary" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Medicine Dispensary"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Waiting Area" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Waiting Area"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Doctor Desk" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Doctor Desk"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Holistic Care" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Holistic Care"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
-                <div class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Natural Remedies" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+                <div
+                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
+                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Natural Remedies"
+                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
                 </div>
             </div>
         </div>
@@ -371,30 +395,44 @@
                 <!-- Left: Image Placeholder -->
                 <div class="lg:w-1/2 w-full">
                     <div class="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl group">
-                        <img src="https://placehold.co/1000x1000?text=Dr.+Joshua" alt="Dr. K. Nikhil Joshua" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-                        <div class="absolute inset-0 bg-gradient-to-t from-teal-900/60 to-transparent pointer-events-none"></div>
+                        <img src="https://placehold.co/1000x1000?text=Dr.+Joshua" alt="Dr. K. Nikhil Joshua"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-teal-900/60 to-transparent pointer-events-none">
+                        </div>
                     </div>
                 </div>
                 <!-- Right: Bio -->
                 <div class="lg:w-1/2 w-full flex flex-col justify-center">
-                    <div class="inline-block px-4 py-1.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-sm mb-6 w-max">
+                    <div
+                        class="inline-block px-4 py-1.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-sm mb-6 w-max">
                         Dr. K. Nikhil Joshua
                     </div>
                     <h2 class="text-teal-900 text-3xl font-bold mb-4">Healing the Mind & Body</h2>
                     <h3 class="text-xl md:text-2xl text-teal-700 font-bold mb-6 flex items-center flex-wrap gap-2">
-                        B.H.M.S <span class="w-1.5 h-1.5 rounded-full bg-gray-400 hidden sm:block"></span> M.A (Counselling Psychology)
+                        B.H.M.S <span class="w-1.5 h-1.5 rounded-full bg-gray-400 hidden sm:block"></span> M.A
+                        (Counselling Psychology)
                     </h3>
                     <div class="space-y-4 text-gray-600 text-lg leading-relaxed mb-8">
                         <p>
-                            Experience a revolutionary approach to holistic healing. Dr. Joshua combines the profound physiological treatments of standard Homeopathy with advanced therapeutic insights from Counselling Psychology. 
+                            Experience a revolutionary approach to holistic healing. Dr. Joshua combines the profound
+                            physiological treatments of standard Homeopathy with advanced therapeutic insights from
+                            Counselling Psychology.
                         </p>
                         <p>
-                            This unique dual-qualification allows him to treat the root cause by addressing both physical symptoms and mental triggers, ensuring long-lasting, complete wellness for the patient.
+                            This unique dual-qualification allows him to treat the root cause by addressing both
+                            physical symptoms and mental triggers, ensuring long-lasting, complete wellness for the
+                            patient.
                         </p>
                     </div>
-                    <a href="#services" class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors w-max group">
+                    <a href="#services"
+                        class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors w-max group">
                         Explore Our Treatments
-                        <svg aria-hidden="true" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        <svg aria-hidden="true" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                        </svg>
                     </a>
                 </div>
             </div>
@@ -404,37 +442,60 @@
     <!-- Dedicated Contact & Location Section -->
     <section id="contact" class="py-20 bg-teal-50 border-t border-teal-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col lg:flex-row gap-12 bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+            <div
+                class="flex flex-col lg:flex-row gap-12 bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
                 <div class="lg:w-1/3 p-8 md:p-12 bg-teal-900 text-white flex flex-col justify-center">
                     <h2 class="text-3xl font-bold mb-6">Visit Our Clinic</h2>
-                    <p class="text-teal-100 mb-8 text-lg">We are here to help you achieve holistic wellness. Reach out to schedule your visit.</p>
-                    
+                    <p class="text-teal-100 mb-8 text-lg">We are here to help you achieve holistic wellness. Reach out
+                        to schedule your visit.</p>
+
                     <div class="space-y-6">
                         <div class="flex items-start gap-4">
-                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                </path>
+                            </svg>
                             <div>
                                 <h4 class="font-semibold text-teal-50">Call / WhatsApp</h4>
                                 <p class="text-teal-200">+91 7780544705</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-4">
-                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                </path>
+                            </svg>
                             <div>
                                 <h4 class="font-semibold text-teal-50">Email</h4>
                                 <p class="text-teal-200">hopehomeocare7@gmail.com</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-4">
-                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <svg class="w-6 h-6 text-teal-300 shrink-0 mt-1" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
                             <div>
                                 <h4 class="font-semibold text-teal-50">Location</h4>
-                                <p class="text-teal-200">Opp. Bank of Baroda, Devasthanam Road, Mangalagiri, Andhra Pradesh</p>
+                                <p class="text-teal-200">Opp. Bank of Baroda, Devasthanam Road, Mangalagiri, Andhra
+                                    Pradesh</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="lg:w-2/3 h-80 lg:h-auto min-h-[400px]">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1514.2680788031412!2d80.56570724739558!3d16.434582055123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35f1f6819a84bb%3A0x6818ac523aa72f89!2sHope%20Homeo%20Care!5e0!3m2!1sen!2sin!4v1776357741174!5m2!1sen!2sin" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1514.2680788031412!2d80.56570724739558!3d16.434582055123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35f1f6819a84bb%3A0x6818ac523aa72f89!2sHope%20Homeo%20Care!5e0!3m2!1sen!2sin!4v1776357741174!5m2!1sen!2sin"
+                        class="w-full h-full border-0" allowfullscreen="" loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
                 </div>
             </div>
         </div>
@@ -492,14 +553,32 @@
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-                    <input type="tel" id="patient-phone" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                    <div class="flex">
+                        <span
+                            class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-medium">+91</span>
+                        <input type="tel" id="patient-phone" required maxlength="10" pattern="[0-9]{10}"
+                            placeholder="10-digit mobile number"
+                            class="flex-1 min-w-0 block w-full px-4 py-2 rounded-none rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date</label>
-                    <input type="date" id="patient-date" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date</label>
+                        <input type="text" id="patient-date" required placeholder="Select Date"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time Session</label>
+                        <select id="patient-time" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700 bg-white">
+                            <option value="" disabled selected>Select a session</option>
+                            <option value="Morning Session (10:00 AM - 2:00 PM)">Morning Session (10:00 AM - 2:00 PM)
+                            </option>
+                            <option value="Evening Session (5:00 PM - 9:00 PM)">Evening Session (5:00 PM - 9:00 PM)
+                            </option>
+                        </select>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Brief Symptoms</label>
@@ -526,12 +605,16 @@
         </div>
     </div>
 
-    <div id="reviews-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity">
+    <div id="reviews-modal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity">
         <div class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[85vh] flex flex-col relative">
             <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl shrink-0">
                 <h3 class="text-2xl font-bold text-teal-900">Patient Reviews</h3>
                 <button id="close-reviews-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
                 </button>
             </div>
             <div id="modal-reviews-list" class="p-6 overflow-y-auto space-y-4 flex-1">

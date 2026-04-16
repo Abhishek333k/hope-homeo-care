@@ -31,6 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const flatpickrDateInput = document.getElementById('patient-date');
+    if (flatpickrDateInput) {
+        flatpickr(flatpickrDateInput, {
+            minDate: "today",
+            disable: [
+                function(date) { return (date.getDay() === 0); } // Disable Sundays
+            ],
+            dateFormat: "Y-m-d",
+        });
+    }
+
     const modal = document.getElementById('booking-modal');
     if (!modal) return;
 
@@ -79,11 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameInput = document.getElementById('patient-name');
             const phoneInput = document.getElementById('patient-phone');
             const dateInput = document.getElementById('patient-date');
+            const timeInput = document.getElementById('patient-time');
             const symptomsInput = document.getElementById('patient-symptoms');
             const consentInput = document.getElementById('patient-consent');
 
-            if (!nameInput.value || !phoneInput.value || !dateInput.value || !symptomsInput.value || !consentInput.checked) {
+            if (!nameInput.value || !phoneInput.value || !dateInput.value || !timeInput.value || !symptomsInput.value || !consentInput.checked) {
                 alert("Please fill out all fields and accept the legal disclaimer.");
+                return;
+            }
+
+            if (!/^\d{10}$/.test(phoneInput.value)) {
+                alert("Please enter a valid 10-digit mobile number.");
                 return;
             }
 
@@ -110,8 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await addDoc(collection(db, "appointments"), {
                     name: nameInput.value,
-                    phone: phoneInput.value,
+                    phone: "+91 " + phoneInput.value,
                     date: dateInput.value,
+                    time: timeInput.value,
                     symptoms: symptomsInput.value,
                     consent: consentInput.checked,
                     timestamp: serverTimestamp(),
@@ -126,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     nameInput.value = '';
                     phoneInput.value = '';
                     dateInput.value = '';
+                    timeInput.value = '';
                     symptomsInput.value = '';
                     consentInput.checked = false;
                     closeModal();
