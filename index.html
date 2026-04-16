@@ -65,6 +65,10 @@
         .testimonial-card {
             white-space: normal;
         }
+
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 
@@ -82,24 +86,39 @@
                 Hope Homeo Care
             </div>
             <nav class="hidden md:flex space-x-8 items-center">
-                <a href="#"
-                    class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Home</a>
-                <a href="#"
-                    class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Services</a>
-                <a href="#" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">About
-                    Dr. Nikhil</a>
-                <a href="#"
-                    class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Testimonials</a>
+                <a href="#home" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Home</a>
+                <a href="#services" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Services</a>
+                <a href="#about" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">About Dr. Nikhil</a>
+                <a href="#testimonials" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Testimonials</a>
+                <a href="#blogs" class="text-gray-600 hover:text-teal-700 font-medium transition-colors duration-300">Blog</a>
             </nav>
             <a href="#"
                 class="bg-teal-700 hover:bg-teal-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hidden md:block">
                 Book Appointment
             </a>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-teal-900 focus:outline-none">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-100 absolute w-full left-0 shadow-lg">
+            <nav class="flex flex-col px-4 pt-2 pb-4 space-y-2 text-slate-600 font-medium">
+                <a href="#home" class="block py-2 hover:text-teal-700">Home</a>
+                <a href="#services" class="block py-2 hover:text-teal-700">Services</a>
+                <a href="#about" class="block py-2 hover:text-teal-700">About Us</a>
+                <a href="#blogs" class="block py-2 hover:text-teal-700">Blogs</a>
+                <a href="#testimonials" class="block py-2 hover:text-teal-700">Testimonials</a>
+            </nav>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="relative bg-teal-900 overflow-hidden">
+    <section id="home" class="relative bg-teal-900 overflow-hidden">
         <!-- Background decorative blobs -->
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
             <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-teal-400 blur-3xl"></div>
@@ -198,8 +217,48 @@
         </div>
     </section>
 
+    <!-- 4. Clinical Expertise (Services) Section -->
+    <section id="services" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold text-teal-900 mb-4">Specialized Natural Care</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Combining physiological homeopathy with psychological insights to treat the person, not just the disease.</p>
+                <div class="w-24 h-1.5 bg-teal-500 mx-auto mt-6 rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Respiratory -->
+                <div class="group p-8 rounded-3xl bg-teal-50 border border-teal-100/50 hover:bg-white hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-500">
+                    <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 text-teal-700 group-hover:bg-teal-700 group-hover:text-white transition-colors duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.5 12.75l6 6 9-13.5"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Respiratory Wellness</h3>
+                    <p class="text-gray-600 leading-relaxed">Advanced treatment for Asthma, Sinusitis, and Chronic Cough using natural physiological triggers.</p>
+                </div>
+
+                <!-- Skin -->
+                <div class="group p-8 rounded-3xl bg-teal-50 border border-teal-100/50 hover:bg-white hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-500">
+                    <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 text-teal-700 group-hover:bg-teal-700 group-hover:text-white transition-colors duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A12 12 0 0112 21a12 12 0 01-8.716-6.747M3 12c0-.778.099-1.533.284-2.253"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Skin & Allergy Care</h3>
+                    <p class="text-gray-600 leading-relaxed">Holistic management for Eczema, Psoriasis, and Urticaria by addressing internal systemic imbalances.</p>
+                </div>
+
+                <!-- Mental Wellness -->
+                <div class="group p-8 rounded-3xl bg-teal-50 border border-teal-100/50 hover:bg-white hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-500">
+                    <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 text-teal-700 group-hover:bg-teal-700 group-hover:text-white transition-colors duration-500">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Mental & Emotional Health</h3>
+                    <p class="text-gray-600 leading-relaxed">Integrating Counseling Psychology to resolve Stress, Anxiety, and Depression-related symptoms.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- 2. Doctor Profile Section -->
-    <section class="bg-gray-50 py-16">
+    <section id="about" class="bg-gray-50 py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row items-center gap-12">
                 <!-- Image Left (1/3 width) -->
@@ -241,14 +300,14 @@
     </section>
 
     <!-- 3. Testimonial Scroller (Marquee) & Legal -->
-    <section class="bg-white py-20 overflow-hidden">
+    <section id="testimonials" class="bg-white py-20 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-900">What Our Patients Say</h2>
             <div class="w-24 h-1 bg-teal-500 mx-auto mt-4 rounded-full"></div>
         </div>
 
         <div class="marquee-container w-full max-w-full pb-8">
-            <div class="marquee-content gap-6 px-4">
+            <div id="review-scroller" class="marquee-content gap-6 px-4">
                 <!-- Original Set of Cards -->
                 <div
                     class="testimonial-card w-80 flex-shrink-0 bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
@@ -553,34 +612,34 @@
             <form class="space-y-4 text-left">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
+                    <input type="text" id="patient-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-                    <input type="tel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
+                    <input type="tel" id="patient-phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date</label>
-                    <input type="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700">
+                    <input type="date" id="patient-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Brief Symptoms</label>
-                    <textarea rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all resize-none"></textarea>
+                    <textarea rows="3" id="patient-symptoms" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all resize-none"></textarea>
                 </div>
                 <div class="flex items-start gap-2 pt-2 pb-2">
-                    <input type="checkbox" id="consent" required class="mt-1 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
-                    <label for="consent" class="text-xs text-slate-600 cursor-pointer">
+                    <input type="checkbox" id="patient-consent" required class="mt-1 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                    <label for="patient-consent" class="text-xs text-slate-600 cursor-pointer">
                         I consent to sharing this health information for the purpose of booking a consultation. I understand this does not constitute a doctor-patient relationship until confirmed.
                     </label>
                 </div>
-                <button type="submit" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg">
+                <button type="submit" id="booking-submit-btn" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg">
                     Submit Request
                 </button>
             </form>
         </div>
     </div>
 
-    <script src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/main.js"></script>
 </body>
 
 </html>

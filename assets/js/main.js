@@ -1,4 +1,36 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
+  authDomain: "hope-homeo-care.firebaseapp.com",
+  projectId: "hope-homeo-care",
+  storageBucket: "hope-homeo-care.firebasestorage.app",
+  messagingSenderId: "962992614809",
+  appId: "1:962992614809:web:8d61d27c8881588c59f708"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Mobile Menu Logic
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close menu on link click
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+    }
+
     const modal = document.getElementById('booking-modal');
     if (!modal) return;
 
@@ -38,6 +70,56 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal();
         }
     });
+
+    const submitBtn = document.getElementById('booking-submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            const nameInput = document.getElementById('patient-name');
+            const phoneInput = document.getElementById('patient-phone');
+            const dateInput = document.getElementById('patient-date');
+            const symptomsInput = document.getElementById('patient-symptoms');
+            const consentInput = document.getElementById('patient-consent');
+
+            if (!nameInput.value || !phoneInput.value || !dateInput.value || !symptomsInput.value || !consentInput.checked) {
+                alert("Please fill out all fields and accept the legal disclaimer.");
+                return;
+            }
+
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Sending Request...";
+            submitBtn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "appointments"), {
+                    name: nameInput.value,
+                    phone: phoneInput.value,
+                    date: dateInput.value,
+                    symptoms: symptomsInput.value,
+                    consent: consentInput.checked,
+                    timestamp: serverTimestamp()
+                });
+                
+                submitBtn.innerText = "Request Sent Successfully!";
+                setTimeout(() => {
+                    nameInput.value = '';
+                    phoneInput.value = '';
+                    dateInput.value = '';
+                    symptomsInput.value = '';
+                    consentInput.checked = false;
+                    closeModal();
+                    submitBtn.innerText = "Submit Request";
+                    submitBtn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("There was an error sending your request. Please try again.");
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
 });
 
 async function loadBloggerFeed() {
@@ -82,4 +164,43 @@ async function loadBloggerFeed() {
     }
 }
 
+async function loadGoogleReviews() {
+    const scroller = document.getElementById('review-scroller');
+    if (!scroller) return;
+
+    try {
+        const response = await fetch('./assets/data/reviews.json');
+        if (!response.ok) return; // Fail silently, keep static reviews
+        
+        const reviews = await response.json();
+        if (!reviews || reviews.length === 0) return;
+
+        const starSvg = `<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+
+        const reviewCards = reviews.map(review => {
+            return `
+                <div class="testimonial-card w-80 flex-shrink-0 bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex mb-4">
+                        ${Array(review.rating).fill(starSvg).join('')}
+                    </div>
+                    <p class="text-gray-600 mb-6 italic text-sm">"${review.text}"</p>
+                    <div class="flex items-center gap-3">
+                        ${review.profile_photo_url ? `<img src="${review.profile_photo_url}" class="w-10 h-10 rounded-full" alt="${review.author_name}">` : ''}
+                        <div>
+                            <div class="font-bold text-gray-900">${review.author_name}</div>
+                            <div class="text-xs text-gray-400">${review.relative_time_description}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Duplicate the cards for seamless marquee effect
+        scroller.innerHTML = [...reviewCards, ...reviewCards].join('');
+    } catch (error) {
+        console.error("Reviews load error:", error);
+    }
+}
+
 loadBloggerFeed();
+loadGoogleReviews();
