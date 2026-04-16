@@ -98,10 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: dateInput.value,
                     symptoms: symptomsInput.value,
                     consent: consentInput.checked,
-                    timestamp: serverTimestamp()
+                    timestamp: serverTimestamp(),
+                    status: 'pending'
                 });
                 
-                submitBtn.innerText = "Request Sent Successfully!";
+                submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
                     nameInput.value = '';
                     phoneInput.value = '';
