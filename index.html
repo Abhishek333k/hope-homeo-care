@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hope Homeo Care - Holistic Healing</title>
+    <meta name="description" content="Hope Homeo Care in Mangalagiri offers holistic healing, combining physiological homeopathy with expert counselling by Dr. K. Nikhil Joshua.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -68,6 +69,14 @@
 
         html {
             scroll-behavior: smooth;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -299,10 +308,11 @@
             <div class="w-24 h-1 bg-teal-500 mx-auto mt-4 rounded-full"></div>
         </div>
 
-        <div class="max-w-7xl mx-auto px-4 pb-8">
-            <div id="testimonials-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center w-full py-12 text-teal-700 font-semibold animate-pulse col-span-1 md:col-span-3">Loading reviews...</div>
+        <div class="max-w-7xl mx-auto pb-8">
+            <div id="testimonials-grid" class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 hide-scrollbar px-4">
+                <div class="text-center w-full py-12 text-teal-700 font-semibold animate-pulse shrink-0">Loading reviews...</div>
             </div>
+            <div class="text-center mt-4"><button id="view-all-reviews-btn" class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors">View All Reviews</button></div>
         </div>
 
         <div class="max-w-4xl mx-auto px-4 mt-12 text-center">
@@ -424,7 +434,7 @@
                     </div>
                 </div>
                 <div class="lg:w-2/3 h-80 lg:h-auto min-h-[400px]">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d438.14324268489713!2d80.5663522718531!3d16.434472951016996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35f1f6819a84bb%3A0x6818ac523aa72f89!2sHope%20Homeo%20Care!5e1!3m2!1sen!2sin!4v1776355553992!5m2!1sen!2sin" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1514.2680788031412!2d80.56570724739558!3d16.434582055123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35f1f6819a84bb%3A0x6818ac523aa72f89!2sHope%20Homeo%20Care!5e0!3m2!1sen!2sin!4v1776357741174!5m2!1sen!2sin" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                 </div>
             </div>
         </div>
@@ -504,11 +514,28 @@
                         understand this does not constitute a doctor-patient relationship until confirmed.
                     </label>
                 </div>
+                <!-- Honeypot -->
+                <div style="position: absolute; left: -5000px;" aria-hidden="true">
+                    <input type="text" id="patient-fax" name="fax" tabindex="-1" autocomplete="off">
+                </div>
                 <button type="submit" id="booking-submit-btn"
                     class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg">
                     Submit Request
                 </button>
             </form>
+        </div>
+    </div>
+
+    <div id="reviews-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity">
+        <div class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[85vh] flex flex-col relative">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl shrink-0">
+                <h3 class="text-2xl font-bold text-teal-900">Patient Reviews</h3>
+                <button id="close-reviews-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modal-reviews-list" class="p-6 overflow-y-auto space-y-4 flex-1">
+            </div>
         </div>
     </div>
 

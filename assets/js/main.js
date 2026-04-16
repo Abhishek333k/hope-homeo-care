@@ -88,6 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const originalText = submitBtn.innerText;
+
+            // 1. Honeypot check
+            if (document.getElementById('patient-fax').value) {
+                console.log("Spam detected via honeypot.");
+                submitBtn.innerText = "Request Sent!";
+                setTimeout(() => closeModal(), 1000);
+                return;
+            }
+
+            // 2. Cooldown check
+            const lastSubmitTime = localStorage.getItem('lastSubmitTime');
+            if (lastSubmitTime && Date.now() - parseInt(lastSubmitTime) < 60000) {
+                alert("Please wait a minute before submitting another request.");
+                return;
+            }
+
             submitBtn.innerText = "Sending Request...";
             submitBtn.disabled = true;
 
@@ -101,6 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     timestamp: serverTimestamp(),
                     status: 'pending'
                 });
+                
+                // Update cooldown timer on success
+                localStorage.setItem('lastSubmitTime', Date.now());
                 
                 submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
@@ -150,7 +169,7 @@ async function loadBloggerFeed() {
             
             const contentHtml = entry.content ? entry.content.$t : '';
             const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
-            const imageSrc = imgMatch ? imgMatch[1] : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+            const imageSrc = imgMatch ? imgMatch[1] : './assets/images/blog-placeholder.webp';
 
             return `
                 <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-slate-100">
@@ -182,32 +201,54 @@ async function loadBloggerFeed() {
 
 async function loadGoogleReviews() {
     const grid = document.getElementById('testimonials-grid');
+    const modalList = document.getElementById('modal-reviews-list');
     if (!grid) return;
 
-    const fallbackHTML = '<div class="text-center w-full py-8 text-slate-500 col-span-1 md:col-span-3">Real patient reviews are currently being synced from Google.</div>';
+    const fallbackHTML = '<div class="text-center w-full py-8 text-slate-500 shrink-0">Real patient reviews are currently being synced from Google.</div>';
 
     try {
         const response = await fetch('./assets/data/reviews.json');
         if (!response.ok) {
             grid.innerHTML = fallbackHTML;
+            if(modalList) modalList.innerHTML = fallbackHTML;
             return;
         }
         
         const reviews = await response.json();
         if (!reviews || reviews.length === 0) {
             grid.innerHTML = fallbackHTML;
+            if(modalList) modalList.innerHTML = fallbackHTML;
             return;
         }
 
         const starSvg = `<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
 
-        const reviewCards = reviews.map(review => {
-            return `
-                <div class="testimonial-card w-full flex-shrink-0 bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex mb-4">
+        // Render first 4 to Grid (Horizontal Snap Carousel)
+        const carouselCards = reviews.slice(0, 4).map(review => `
+            <div class="testimonial-card w-[85vw] md:w-[400px] shrink-0 snap-center bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex mb-4">
+                    ${Array(review.rating).fill(starSvg).join('')}
+                </div>
+                <p class="text-gray-600 mb-6 italic text-sm">"${review.text}"</p>
+                <div class="flex items-center gap-3">
+                    ${review.profile_photo_url ? `<img src="${review.profile_photo_url}" class="w-10 h-10 rounded-full" alt="${review.author_name}">` : ''}
+                    <div>
+                        <div class="font-bold text-gray-900">${review.author_name}</div>
+                        <div class="text-xs text-gray-400">${review.relative_time_description}</div>
+                    </div>
+                </div>
+            </div>
+        `);
+        grid.innerHTML = carouselCards.join('');
+
+        // Render all to Modal List (Full Width list)
+        if(modalList) {
+            const modalCards = reviews.map(review => `
+                <div class="testimonial-card w-full bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex mb-3">
                         ${Array(review.rating).fill(starSvg).join('')}
                     </div>
-                    <p class="text-gray-600 mb-6 italic text-sm">"${review.text}"</p>
+                    <p class="text-gray-600 mb-4 italic text-sm">"${review.text}"</p>
                     <div class="flex items-center gap-3">
                         ${review.profile_photo_url ? `<img src="${review.profile_photo_url}" class="w-10 h-10 rounded-full" alt="${review.author_name}">` : ''}
                         <div>
@@ -216,15 +257,52 @@ async function loadGoogleReviews() {
                         </div>
                     </div>
                 </div>
-            `;
-        });
-
-        grid.innerHTML = reviewCards.join('');
+            `);
+            modalList.innerHTML = modalCards.join('');
+        }
     } catch (error) {
         console.error("Reviews load error:", error);
         grid.innerHTML = fallbackHTML;
+        if(modalList) modalList.innerHTML = fallbackHTML;
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const viewAllBtn = document.getElementById('view-all-reviews-btn');
+    const reviewsModal = document.getElementById('reviews-modal');
+    const closeReviewsBtn = document.getElementById('close-reviews-modal');
+
+    // Toggle Review Modal
+    if (viewAllBtn && reviewsModal) {
+        viewAllBtn.addEventListener('click', () => {
+            reviewsModal.classList.remove('hidden');
+        });
+    }
+
+    if (closeReviewsBtn && reviewsModal) {
+        closeReviewsBtn.addEventListener('click', () => {
+            reviewsModal.classList.add('hidden');
+        });
+    }
+
+    // Close on overlay click
+    if (reviewsModal) {
+        reviewsModal.addEventListener('click', (e) => {
+            if (e.target === reviewsModal) {
+                reviewsModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // Close on Escape key (handled globally for both modals if needed)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (reviewsModal && !reviewsModal.classList.contains('hidden')) {
+                reviewsModal.classList.add('hidden');
+            }
+        }
+    });
+});
 
 loadBloggerFeed();
 loadGoogleReviews();
