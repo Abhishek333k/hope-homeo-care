@@ -32,16 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const dateInput = document.getElementById('patient-date');
-    const dateWrapper = document.getElementById('date-wrapper');
-    
-    if (dateInput && dateWrapper) {
+    if (dateInput) {
         flatpickr(dateInput, {
             minDate: "today",
             disable: [
                 function(date) { return (date.getDay() === 0); } // Disable Sundays
             ],
             dateFormat: "Y-m-d",
-            appendTo: dateWrapper, // Locks calendar exactly to this div
+            static: true, // MAGIC BULLET: Embeds the calendar into the layout flow
             disableMobile: "true" 
         });
     }
