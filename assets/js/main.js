@@ -32,16 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const dateInput = document.getElementById('patient-date');
-    const modalBox = document.querySelector('#booking-modal > div'); // The white modal box
-    if (dateInput && modalBox) {
+    const dateWrapper = document.getElementById('date-wrapper');
+    
+    if (dateInput && dateWrapper) {
         flatpickr(dateInput, {
             minDate: "today",
             disable: [
                 function(date) { return (date.getDay() === 0); } // Disable Sundays
             ],
             dateFormat: "Y-m-d",
-            appendTo: modalBox, // Locks the calendar to the modal
-            disableMobile: "true" // Forces the beautiful UI on mobile instead of ugly native wheels
+            appendTo: dateWrapper, // Locks calendar exactly to this div
+            disableMobile: "true" 
         });
     }
 
