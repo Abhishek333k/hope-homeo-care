@@ -124,9 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadBloggerFeed() {
-    const blogUrl = 'https://Blogger-Blog-Name-Here.blogspot.com/feeds/posts/default?alt=json&max-results=3';
+    const blogUrl = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json&max-results=3';
     const grid = document.getElementById('blog-grid');
     if (!grid) return;
+
+    grid.innerHTML = '<p class="text-center text-teal-700 font-semibold col-span-3">Loading latest articles...</p>';
 
     try {
         const response = await fetch(blogUrl);
@@ -137,28 +139,41 @@ async function loadBloggerFeed() {
             return;
         }
 
-        const htmlStrings = data.feed.entry.map(entry => {
+        const posts = data.feed.entry.map(entry => {
             const title = entry.title.$t;
-            let href = '#';
-            if (entry.link) {
-                const linkObj = entry.link.find(l => l.rel === 'alternate');
-                if (linkObj) href = linkObj.href;
-            }
             
-            const thumbnail = entry.media$thumbnail ? entry.media$thumbnail.url : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+            let href = '#';
+            const alternateLink = entry.link.find(l => l.rel === 'alternate');
+            if (alternateLink) href = alternateLink.href;
+
+            const publishedDate = new Date(entry.published.$t).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+            
+            const contentHtml = entry.content ? entry.content.$t : '';
+            const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
+            const imageSrc = imgMatch ? imgMatch[1] : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
 
             return `
-                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-                    <img src="${thumbnail}" alt="Blog Image" class="w-full h-48 object-cover">
-                    <div class="p-6">
-                        <h3 class="font-bold text-lg text-slate-800 mb-3">${title}</h3>
-                        <a href="${href}" class="text-teal-700 font-semibold hover:underline" target="_blank">Read More</a>
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-slate-100">
+                    <div class="relative w-full h-56 overflow-hidden">
+                        <img src="${imageSrc}" alt="${title}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 bg-slate-100">
+                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur text-teal-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                            ${publishedDate}
+                        </div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="font-bold text-lg text-slate-800 mb-4 line-clamp-2 leading-snug">${title}</h3>
+                        <div class="mt-auto pt-5 border-t border-slate-100">
+                            <a href="${href}" class="inline-flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-900 transition-colors" target="_blank" rel="noopener noreferrer">
+                                Read Article
+                                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </a>
+                        </div>
                     </div>
                 </div>
             `;
         });
 
-        grid.innerHTML = htmlStrings.join('');
+        grid.innerHTML = posts.join('');
     } catch (error) {
         console.error('Blogger Feed Error:', error);
         grid.innerHTML = '<p class="text-center text-slate-500 col-span-3">Unable to load latest articles at this time.</p>';
