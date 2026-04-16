@@ -31,14 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const flatpickrDateInput = document.getElementById('patient-date');
-    if (flatpickrDateInput) {
-        flatpickr(flatpickrDateInput, {
+    const dateInput = document.getElementById('patient-date');
+    const modalBox = document.querySelector('#booking-modal > div'); // The white modal box
+    if (dateInput && modalBox) {
+        flatpickr(dateInput, {
             minDate: "today",
             disable: [
                 function(date) { return (date.getDay() === 0); } // Disable Sundays
             ],
             dateFormat: "Y-m-d",
+            appendTo: modalBox, // Locks the calendar to the modal
+            disableMobile: "true" // Forces the beautiful UI on mobile instead of ugly native wheels
         });
     }
 
