@@ -18,13 +18,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Fetch Latest Google Reviews
         run: node scripts/fetch-reviews.js
         env:
-          PLACE_ID: ${{ secrets.GOOGLE_PLACE_ID }}
-          API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          PLACE_ID: ${{ secrets.PLACE_ID }}
+          API_KEY: ${{ secrets.API_KEY }}
 
       - name: Commit and Push Changes
         run: |
