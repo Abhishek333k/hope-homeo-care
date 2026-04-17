@@ -1,5 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -11,6 +11,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 document.addEventListener('DOMContentLoaded', () => {
     // Mobile Menu Logic
@@ -127,23 +128,24 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
 
             try {
+                const phoneVal = phoneInput.value.trim();
+                const formattedPhone = "+91" + phoneVal;
+
                 const docRef = await addDoc(collection(db, "appointments"), {
                     name: nameInput.value,
-                    phone: "+91 " + phoneInput.value,
+                    phone: formattedPhone, // Saves as +91...
                     date: dateInput.value,
                     time: timeInput.value,
                     symptoms: symptomsInput.value,
                     consent: consentInput.checked,
-                    timestamp: serverTimestamp(),
-                    status: 'pending'
+                    status: 'pending',
+                    timestamp: serverTimestamp()
                 });
-                
-                const bookingId = docRef.id;
                 
                 // Update cooldown timer on success
                 localStorage.setItem('lastSubmitTime', Date.now());
                 
-                alert(`Success! Your appointment request is sent.\n\nIMPORTANT: Your Booking Reference is:\n${bookingId}\n\nPlease save this ID to track your status.`);
+                alert("Success! Your request is sent. You can track your status in the Patient Portal.");
                 
                 submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
@@ -462,54 +464,126 @@ async function loadDynamicGallery() {
 // Call it on load
 loadDynamicGallery();
 
-// Status Tracker Logic
-const statusModal = document.getElementById('status-modal');
-const statusBox = document.getElementById('status-box');
+// Patient Portal DOM
+const portalModal = document.getElementById('portal-modal');
+const portalBox = document.getElementById('portal-box');
+const loginView = document.getElementById('portal-login-view');
+const otpView = document.getElementById('portal-otp-view');
+const dashView = document.getElementById('portal-dashboard-view');
+const navBtn = document.getElementById('nav-portal-btn');
 
-const openStatus = () => {
-    statusModal.classList.remove('hidden');
-    setTimeout(() => { statusModal.classList.remove('opacity-0'); statusBox.classList.remove('scale-95'); }, 10);
+const openPortal = () => {
+    portalModal.classList.remove('hidden');
+    setTimeout(() => { portalModal.classList.remove('opacity-0'); portalBox.classList.remove('scale-95'); }, 10);
 };
-const closeStatus = () => {
-    statusModal.classList.add('opacity-0'); statusBox.classList.add('scale-95');
-    setTimeout(() => { statusModal.classList.add('hidden'); document.getElementById('status-result').classList.add('hidden'); }, 300);
+const closePortal = () => {
+    portalModal.classList.add('opacity-0'); portalBox.classList.add('scale-95');
+    setTimeout(() => { portalModal.classList.add('hidden'); }, 300);
 };
 
-document.getElementById('nav-track-btn')?.addEventListener('click', openStatus);
-document.getElementById('close-status-btn')?.addEventListener('click', closeStatus);
+navBtn?.addEventListener('click', openPortal);
+document.getElementById('close-portal-btn')?.addEventListener('click', closePortal);
 
-document.getElementById('check-status-btn')?.addEventListener('click', async () => {
-    const id = document.getElementById('track-id').value.trim();
-    const phone = document.getElementById('track-phone').value.trim();
-    const resultDiv = document.getElementById('status-result');
-    const btn = document.getElementById('check-status-btn');
-    
-    if(!id || !phone) return alert("Please enter both ID and Phone Number.");
-    
-    btn.innerHTML = "Checking...";
-    try {
-        const docSnap = await getDoc(doc(db, "appointments", id));
-        if (docSnap.exists() && docSnap.data().phone === ("+91 " + phone)) {
-            const data = docSnap.data();
-            const status = data.status || 'pending';
-            let statusHtml = '';
-            
-            if(status === 'pending') {
-                statusHtml = `<div class="bg-amber-50 border-amber-200 text-amber-700 flex items-center gap-3 p-4 rounded-xl border"><span class="material-icons-round">hourglass_top</span> <div><p class="font-bold">Status: Pending</p><p class="text-sm">The clinic is reviewing your request.</p></div></div>`;
-            } else if (status === 'addressed') {
-                statusHtml = `<div class="bg-teal-50 border-teal-200 text-teal-700 flex items-center gap-3 p-4 rounded-xl border"><span class="material-icons-round">check_circle</span> <div><p class="font-bold">Status: Confirmed</p><p class="text-sm">Dr. Joshua has reviewed your file.</p></div></div>`;
-            }
-            
-            resultDiv.innerHTML = statusHtml;
-            resultDiv.className = "mt-6 p-0 rounded-xl block"; // Container is now plain since inner div has background
-        } else {
-            resultDiv.innerHTML = `<p class="text-rose-600 font-medium"><span class="material-icons-round align-middle">error</span> No matching record found. Check your ID and Phone.</p>`;
-            resultDiv.className = "mt-6 p-4 rounded-xl border border-rose-200 bg-rose-50 block";
-        }
-    } catch(err) {
-        console.error(err);
-        alert("Error checking status.");
-    } finally {
-        btn.innerHTML = "Check Status";
+// Setup Invisible Recaptcha
+window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', {
+    'size': 'invisible'
+});
+
+// Auth State Listener
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        if(navBtn) navBtn.innerText = "My Dashboard";
+        loginView.classList.add('hidden');
+        otpView.classList.add('hidden');
+        dashView.classList.remove('hidden');
+        await loadPatientDashboard(user.phoneNumber);
+    } else {
+        if(navBtn) navBtn.innerText = "Patient Portal";
+        dashView.classList.add('hidden');
+        otpView.classList.add('hidden');
+        loginView.classList.remove('hidden');
     }
 });
+
+// Send OTP
+document.getElementById('send-otp-btn')?.addEventListener('click', async () => {
+    const phone = "+91" + document.getElementById('portal-phone').value.trim();
+    if(phone.length !== 13) return alert("Enter a valid 10-digit number.");
+    
+    const btn = document.getElementById('send-otp-btn');
+    btn.innerText = "Sending...";
+    try {
+        window.confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+        loginView.classList.add('hidden');
+        otpView.classList.remove('hidden');
+    } catch (error) {
+        console.error("SMS Error:", error);
+        alert("Failed to send OTP. Please try again.");
+        btn.innerText = "Send OTP";
+    }
+});
+
+// Verify OTP
+document.getElementById('verify-otp-btn')?.addEventListener('click', async () => {
+    const code = document.getElementById('portal-otp').value.trim();
+    if(code.length !== 6) return;
+    
+    const btn = document.getElementById('verify-otp-btn');
+    btn.innerText = "Verifying...";
+    try {
+        await window.confirmationResult.confirm(code);
+        // onAuthStateChanged will handle the UI switch
+    } catch (error) {
+        console.error("Verify Error:", error);
+        alert("Invalid Code.");
+        btn.innerText = "Verify & Login";
+    }
+});
+
+// Logout
+document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
+    signOut(auth);
+});
+
+// Load Dashboard Data
+async function loadPatientDashboard(phoneNumber) {
+    const list = document.getElementById('patient-appointment-list');
+    list.innerHTML = '<p class="text-sm text-slate-500 text-center">Loading...</p>';
+    
+    try {
+        const q = query(collection(db, "appointments"), where("phone", "==", phoneNumber));
+        const snapshot = await getDocs(q);
+        
+        if(snapshot.empty) {
+            list.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">No appointments found.</p>';
+            return;
+        }
+        
+        let html = '';
+        // Sort locally since we didn't create a composite index in Firebase
+        const docs = snapshot.docs.map(doc => doc.data()).sort((a,b) => {
+            const timeA = a.timestamp ? a.timestamp.toDate() : 0;
+            const timeB = b.timestamp ? b.timestamp.toDate() : 0;
+            return timeB - timeA;
+        });
+        
+        docs.forEach(data => {
+            const statusColor = data.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700';
+            const statusText = data.status === 'pending' ? 'Pending Review' : 'Confirmed';
+            const date = data.date || 'N/A';
+            
+            html += `
+                <div class="border border-slate-200 rounded-xl p-4 relative">
+                    <span class="absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded-md ${statusColor}">${statusText}</span>
+                    <p class="font-bold text-slate-800">${data.name}</p>
+                    <p class="text-sm text-slate-500 mt-1"><span class="material-icons-round text-[14px] align-middle">event</span> ${date}</p>
+                    ${data.treatment ? `<div class="mt-3 p-3 bg-slate-50 rounded-lg text-sm text-slate-700"><span class="font-bold">Doctor's Note:</span><br>${data.treatment}</div>` : ''}
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    } catch(error) {
+        console.error("Dashboard Error:", error);
+        list.innerHTML = '<p class="text-sm text-rose-500 text-center">Error loading data.</p>';
+    }
+}
