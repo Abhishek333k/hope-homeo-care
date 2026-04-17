@@ -2,6 +2,32 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/fireba
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
+// Custom Toast Notification System
+window.showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
+    const icon = type === 'error' ? 'error' : 'check_circle';
+    
+    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
+    toast.innerHTML = `<span class="material-icons-round text-[20px]">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
+    
+    container.appendChild(toast);
+    
+    // Animate In
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-10', 'opacity-0');
+    });
+    
+    // Animate Out & Remove
+    setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+};
+
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
   authDomain: "hope-homeo-care.firebaseapp.com",
@@ -99,12 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const consentInput = document.getElementById('patient-consent');
 
             if (!nameInput.value || !phoneInput.value || !dateInput.value || !timeInput.value || !symptomsInput.value || !consentInput.checked) {
-                alert("Please fill out all fields and accept the legal disclaimer.");
+                window.showToast("Please fill out all fields and accept the legal disclaimer.", "error");
                 return;
             }
 
             if (!/^\d{10}$/.test(phoneInput.value)) {
-                alert("Please enter a valid 10-digit mobile number.");
+                window.showToast("Please enter a valid 10-digit mobile number.", "error");
                 return;
             }
 
@@ -121,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Cooldown check
             const lastSubmitTime = localStorage.getItem('lastSubmitTime');
             if (lastSubmitTime && Date.now() - parseInt(lastSubmitTime) < 60000) {
-                alert("Please wait a minute before submitting another request.");
+                window.showToast("Please wait a minute before submitting another request.", "error");
                 return;
             }
 
@@ -146,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update cooldown timer on success
                 localStorage.setItem('lastSubmitTime', Date.now());
                 
-                alert("Success! Your request is sent. You can track your status in the Patient Portal.");
+                window.showToast("Appointment requested successfully!");
                 submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
                     nameInput.value = '';
@@ -161,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 2000);
             } catch (error) {
                 console.error("Error adding document: ", error);
-                alert("There was an error sending your request. Please try again.");
+                window.showToast("There was an error sending your request. Please try again.", "error");
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
             }
@@ -466,9 +492,17 @@ loadDynamicGallery();
 
 // UI Elements
 const loginModal = document.getElementById('login-modal');
-const phoneStep = document.getElementById('login-phone-step');
 const otpStep = document.getElementById('login-otp-step');
 const dashboardView = document.getElementById('patient-dashboard');
+
+const resetLoginModal = () => {
+    if (phoneStep) phoneStep.classList.remove('hidden');
+    if (otpStep) otpStep.classList.add('hidden');
+    const phoneInput = document.getElementById('login-phone');
+    const otpInput = document.getElementById('login-otp');
+    if (phoneInput) phoneInput.value = '';
+    if (otpInput) otpInput.value = '';
+};
 
 let confirmationResult = null;
 
@@ -487,13 +521,16 @@ document.getElementById('nav-login-btn')?.addEventListener('click', () => {
 });
 document.getElementById('close-login-btn')?.addEventListener('click', () => {
     loginModal.classList.add('opacity-0');
-    setTimeout(() => loginModal.classList.add('hidden'), 300);
+    setTimeout(() => {
+        loginModal.classList.add('hidden');
+        resetLoginModal(); // Reset state after closing
+    }, 300);
 });
 
 // Send OTP
 document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => {
     const phoneRaw = document.getElementById('login-phone').value.trim();
-    if(phoneRaw.length !== 10) return alert("Enter a valid 10-digit number.");
+    if(phoneRaw.length !== 10) return window.showToast("Enter a valid 10-digit number.", "error");
     const phoneNumber = "+91" + phoneRaw;
     const btn = e.target;
     
@@ -504,7 +541,7 @@ document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => 
         otpStep.classList.remove('hidden');
     } catch (error) {
         console.error("SMS Error:", error);
-        alert("Failed to send OTP. You may have hit the daily free limit.");
+        window.showToast("Failed to send OTP. You may have hit the daily free limit.", "error");
         if (window.recaptchaVerifier) {
             window.recaptchaVerifier.render().then(widgetId => {
                 if (window.grecaptcha) window.grecaptcha.reset(widgetId);
@@ -518,7 +555,7 @@ document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => 
 // Verify OTP
 document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) => {
     const code = document.getElementById('login-otp').value.trim();
-    if(code.length !== 6) return alert("Enter the 6-digit OTP.");
+    if(code.length !== 6) return window.showToast("Enter the 6-digit OTP.", "error");
     const btn = e.target;
     
     btn.innerText = "Verifying...";
@@ -528,7 +565,7 @@ document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) =
         setTimeout(() => loginModal.classList.add('hidden'), 300);
     } catch (error) {
         console.error("Verification Error:", error);
-        alert("Invalid OTP code.");
+        window.showToast("Invalid OTP code.", "error");
     } finally {
         btn.innerText = "Verify & Login";
     }
@@ -611,5 +648,8 @@ onAuthStateChanged(auth, (user) => {
 
 // Logout
 document.getElementById('logout-btn')?.addEventListener('click', () => {
-    signOut(auth);
+    signOut(auth).then(() => {
+        resetLoginModal();
+        window.showToast("Successfully logged out.");
+    });
 });
