@@ -1,8 +1,9 @@
-import { RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { auth, db } from './firebase-init.js';
 
-
+// Global state
+let currentProfile = null; // Stores { phone, name, compositeId }
 
 // Toast System
 window.showToast = (message, type = 'success') => {
@@ -21,22 +22,88 @@ window.showToast = (message, type = 'success') => {
     }, 4000);
 };
 
-// DOM Elements
-const dashboardView = document.getElementById('dashboard-view');
-const logoutBtn = document.getElementById('logout-btn');
+// Tab Switching Logic
+const switchTab = (tabId) => {
+    const views = ['dashboard-view', 'view-records', 'view-profile'];
+    const buttons = ['tab-dashboard', 'tab-records', 'tab-profile'];
+    
+    views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
+    buttons.forEach(b => {
+        const btn = document.getElementById(b);
+        if (btn) {
+            btn.classList.remove('border-teal-600', 'text-teal-700', 'font-bold');
+            btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
+        }
+    });
+
+    // Active
+    const activeViewMap = { 'tab-dashboard': 'dashboard-view', 'tab-records': 'view-records', 'tab-profile': 'view-profile' };
+    document.getElementById(activeViewMap[tabId])?.classList.remove('hidden');
+    const activeBtn = document.getElementById(tabId);
+    if (activeBtn) {
+        activeBtn.classList.add('border-teal-600', 'text-teal-700', 'font-bold');
+        activeBtn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
+    }
+
+    // Load data if needed
+    if (tabId === 'tab-records' && currentProfile?.compositeId) {
+        loadMedicalRecords(currentProfile.compositeId);
+    }
+};
+
+// Tab Listeners
+['tab-dashboard', 'tab-records', 'tab-profile'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => switchTab(id));
+});
+
+// Fetch Medical Records (EMR Logs)
+const loadMedicalRecords = async (compositeId) => {
+    const list = document.getElementById('records-list');
+    if (!list) return;
+    list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
+    
+    try {
+        const q = query(collection(db, "patients", compositeId, "logs"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No medical records or prescriptions found.</p></div>';
+            return;
+        }
+        
+        let html = '';
+        snapshot.forEach(doc => {
+            const log = doc.data();
+            const imageHtml = log.attachment ? `<div class="mt-4"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Attached Prescription</p><img src="${log.attachment}" class="rounded-xl border border-slate-200 max-w-full md:max-w-md shadow-sm"></div>` : '';
+            
+            html += `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="absolute left-0 top-0 w-1 h-full bg-teal-500"></div>
+                    <p class="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">${log.dateStr || 'Recent'} • ${log.author || 'Dr. Joshua'}</p>
+                    <p class="text-slate-800 whitespace-pre-wrap leading-relaxed">${log.text}</p>
+                    ${imageHtml}
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    } catch (error) {
+        console.error("Error loading records:", error);
+        list.innerHTML = '<p class="text-rose-500 text-center py-8">Failed to load medical records. Please try again later.</p>';
+    }
+};
 
 // Fetch Appointments
 const showDashboardView = async (phone, name) => {
     const list = document.getElementById('patient-appointments-list');
     if (!list) return;
     
+    document.getElementById('portal-nav').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Loading history...</p>';
     
     try {
         let aptQuery = query(collection(db, "appointments"), where("phone", "==", phone));
         if (name) {
-            // If a specific family member was selected, filter by their name too
             aptQuery = query(collection(db, "appointments"), where("phone", "==", phone), where("name", "==", name));
         }
         
@@ -79,30 +146,28 @@ const loadFamilyProfiles = async (user) => {
         const snapshot = await getDocs(q);
         
         if (snapshot.size === 0) {
-            // No EMR profile found yet. Just load the dashboard based on phone.
+            currentProfile = { phone: localPhone, name: null, compositeId: null };
             showDashboardView(localPhone, null);
         } else if (snapshot.size === 1) {
-            // Only one person. Auto-select them.
-            const patientData = snapshot.docs[0].data();
-            showDashboardView(localPhone, patientData.name);
+            const p = snapshot.docs[0].data();
+            currentProfile = { phone: localPhone, name: p.name, compositeId: `${localPhone}_${p.name.replace(/\s+/g, '').toLowerCase()}` };
+            showDashboardView(localPhone, p.name);
         } else {
-            // MULTIPLE PROFILES FOUND - Show Family Selector
-            document.getElementById('dashboard-view').classList.add('hidden');
-            const selectorView = document.getElementById('profile-selector-view');
+            document.getElementById('profile-selector-view').classList.remove('hidden');
             const container = document.getElementById('family-profiles-container');
             
             let html = '';
             snapshot.forEach(doc => {
                 const p = doc.data();
+                const composite = `${localPhone}_${p.name.replace(/\s+/g, '').toLowerCase()}`;
                 html += `
-                    <button onclick="window.selectProfile('${p.name}')" class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
+                    <button onclick="window.selectProfile('${p.name}', '${composite}')" class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
                         <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">${p.name.charAt(0).toUpperCase()}</div>
                         <span class="font-semibold text-slate-700 truncate w-full">${p.name}</span>
                     </button>
                 `;
             });
             container.innerHTML = html;
-            selectorView.classList.remove('hidden');
         }
     } catch (err) {
         console.error("Profile load error:", err);
@@ -110,23 +175,21 @@ const loadFamilyProfiles = async (user) => {
     }
 };
 
-// Global function to handle profile selection
-window.selectProfile = (selectedName) => {
+window.selectProfile = (name, compositeId) => {
+    const phone = auth.currentUser.phoneNumber.replace('+91', '');
+    currentProfile = { phone, name, compositeId };
     document.getElementById('profile-selector-view').classList.add('hidden');
-    showDashboardView(auth.currentUser.phoneNumber.replace('+91', ''), selectedName);
+    showDashboardView(phone, name);
 };
 
-// Auth State Guard (The Bouncer)
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        logoutBtn?.classList.remove('hidden');
+        document.getElementById('logout-btn')?.classList.remove('hidden');
         loadFamilyProfiles(user);
     } else {
         window.location.replace('index.html');
     }
 });
 
-// Logout
-logoutBtn?.addEventListener('click', () => {
-    signOut(auth);
-});
+const logoutBtn = document.getElementById('logout-btn');
+logoutBtn?.addEventListener('click', () => signOut(auth));
