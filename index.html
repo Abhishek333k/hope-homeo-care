@@ -4,13 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
     <title>Hope Homeo Care - Holistic Healing</title>
     <meta name="description"
         content="Hope Homeo Care in Mangalagiri offers holistic healing, combining physiological homeopathy with expert counselling by Dr. K. Nikhil Joshua.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         tailwind.config = {
@@ -219,7 +222,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-200 text-center gap-y-8 md:gap-y-0">
                 <div class="flex flex-col items-center justify-center px-4">
-                    <span class="text-4xl md:text-5xl font-extrabold text-teal-700 mb-2">10+</span>
+                    <span class="text-4xl md:text-5xl font-extrabold text-teal-700 mb-2">4+</span>
                     <span class="text-sm md:text-base font-medium text-gray-500 uppercase tracking-wide">Years
                         Experience</span>
                 </div>
@@ -229,7 +232,7 @@
                         Treated</span>
                 </div>
                 <div class="flex flex-col items-center justify-center px-4">
-                    <span class="text-4xl md:text-5xl font-extrabold text-teal-700 mb-2">5k+</span>
+                    <span class="text-4xl md:text-5xl font-extrabold text-teal-700 mb-2">1k+</span>
                     <span class="text-sm md:text-base font-medium text-gray-500 uppercase tracking-wide">Patients
                         Healed</span>
                 </div>
@@ -334,48 +337,14 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <h2 class="text-3xl md:text-4xl font-bold text-teal-900 mb-12">Clinic Gallery</h2>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                <!-- 8 Frosted Glass Cards with CSS Lightbox Faux Effect -->
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Clinic Area"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Consultation Room"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Therapy Space"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Medicine Dispensary"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Waiting Area"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Doctor Desk"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Holistic Care"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
-                <div
-                    class="relative aspect-square rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <img src="https://placehold.co/600x600?text=Clinic+Photo" alt="Natural Remedies"
-                        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
-                </div>
+            <div id="gallery-carousel" class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 md:gap-6 pb-8 px-4 scroll-smooth">
+                <div class="w-full text-center text-slate-500 animate-pulse py-12">Loading gallery...</div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <button id="view-all-gallery-btn" class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors shadow-sm">
+                    View Full Gallery
+                </button>
             </div>
         </div>
     </section>
@@ -394,11 +363,15 @@
             <div class="flex flex-col lg:flex-row items-center gap-16">
                 <!-- Left: Image Placeholder -->
                 <div class="lg:w-1/2 w-full">
-                    <div class="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl group">
-                        <img src="https://placehold.co/1000x1000?text=Dr.+Joshua" alt="Dr. K. Nikhil Joshua"
-                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="relative w-full max-w-lg mx-auto aspect-square group">
                         <div
-                            class="absolute inset-0 bg-gradient-to-t from-teal-900/60 to-transparent pointer-events-none">
+                            class="absolute inset-0 bg-gradient-to-tr from-teal-400 to-teal-700 rounded-[2rem] md:rounded-[3rem] rotate-3 opacity-70 group-hover:rotate-6 transition-transform duration-500">
+                        </div>
+
+                        <div
+                            class="absolute inset-0 bg-white rounded-[2rem] md:rounded-[3rem] p-2 shadow-2xl overflow-hidden">
+                            <img src="assets/images/hero-dr-joshua.webp" alt="Dr. Joshua"
+                                class="w-full h-full object-cover rounded-[1.5rem] md:rounded-[2.5rem]">
                         </div>
                     </div>
                 </div>
@@ -510,9 +483,12 @@
                     <h3 class="text-white text-xl font-bold mb-4">Hope Homeo Care</h3>
                     <p class="text-sm">Integrating standard homeopathy with psychological care for complete healing.</p>
                     <div class="mt-6 flex gap-4">
-                        <a href="https://www.instagram.com/hope_homeo_care/" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-teal-600 hover:text-white transition-all shadow-sm">
+                        <a href="https://www.instagram.com/hope_homeo_care/" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-teal-600 hover:text-white transition-all shadow-sm">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd"
+                                    d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
+                                    clip-rule="evenodd" />
                             </svg>
                         </a>
                     </div>
@@ -629,15 +605,23 @@
         </div>
     </div>
 
-    <div id="campaign-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0">
-        <div class="relative max-w-md w-full mx-4 shadow-2xl rounded-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="campaign-box">
-            <button id="close-campaign-btn" class="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors z-10 backdrop-blur-md">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div id="campaign-modal"
+        class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="relative w-auto mx-4 transform scale-95 transition-transform duration-300 flex justify-center items-center"
+            id="campaign-box">
+            <button id="close-campaign-btn"
+                class="absolute -top-4 -right-4 bg-slate-900 text-white rounded-full p-2 hover:bg-slate-700 transition-colors z-10 shadow-xl border-2 border-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
             </button>
-            <img id="campaign-image" src="" alt="Clinic Announcement" class="w-full h-auto object-cover max-h-[70vh]">
+            <img id="campaign-image" src="" alt="Clinic Announcement"
+                class="w-auto h-auto max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl bg-white">
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
     <script type="module" src="assets/js/main.js"></script>
 </body>
 

@@ -390,3 +390,70 @@ async function loadActiveCampaign() {
 loadBloggerFeed();
 loadGoogleReviews();
 loadActiveCampaign();
+
+async function loadDynamicGallery() {
+    const carousel = document.getElementById('gallery-carousel');
+    if (!carousel) return;
+
+    try {
+        const response = await fetch('./assets/data/gallery.json');
+        const images = await response.json();
+        
+        if (!images || images.length === 0) {
+            carousel.innerHTML = '<div class="w-full text-center text-slate-500">Gallery images coming soon.</div>';
+            return;
+        }
+
+        // 1. Generate Carousel HTML
+        const galleryHTML = images.map(img => `
+            <a href="${img.path}" class="glightbox shrink-0 snap-center relative aspect-square w-[70vw] md:w-[300px] rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60" data-gallery="clinic-gallery">
+                <div class="absolute inset-0 bg-teal-900/0 group-hover:bg-teal-900/20 transition-colors duration-300 z-10 flex items-center justify-center">
+                    <span class="material-icons-round text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300 drop-shadow-md">zoom_out_map</span>
+                </div>
+                <img src="${img.path}" alt="Clinic View" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
+            </a>
+        `).join('');
+        
+        carousel.innerHTML = galleryHTML;
+
+        // 2. Initialize Premium Lightbox (GLightbox)
+        const lightbox = GLightbox({
+            selector: '.glightbox',
+            touchNavigation: true,
+            loop: true,
+            zoomable: true
+        });
+
+        // 3. Wire "View All" Button to trigger the Lightbox
+        document.getElementById('view-all-gallery-btn')?.addEventListener('click', () => {
+            lightbox.open();
+        });
+
+        // 4. Auto-Scroll Engine (Subtle Marquee Effect)
+        let scrollAmount = 0;
+        let isHovered = false;
+        
+        carousel.addEventListener('mouseenter', () => isHovered = true);
+        carousel.addEventListener('mouseleave', () => isHovered = false);
+        carousel.addEventListener('touchstart', () => isHovered = true);
+        carousel.addEventListener('touchend', () => { setTimeout(() => isHovered = false, 2000); });
+
+        setInterval(() => {
+            if (!isHovered && carousel.scrollWidth > carousel.clientWidth) {
+                scrollAmount += 1; // Speed of scroll
+                if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 1)) {
+                    carousel.scrollLeft = 0; // Loop back
+                } else {
+                    carousel.scrollLeft += 1;
+                }
+            }
+        }, 30); // 30ms interval for silky smooth 60fps scrolling
+
+    } catch (error) {
+        console.error("Gallery load error:", error);
+        carousel.innerHTML = '<div class="w-full text-center text-slate-500">Unable to load gallery.</div>';
+    }
+}
+
+// Call it on load
+loadDynamicGallery();
