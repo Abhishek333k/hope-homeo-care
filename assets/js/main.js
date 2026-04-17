@@ -1,4 +1,5 @@
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -131,22 +132,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const phoneVal = phoneInput.value.trim();
                 const formattedPhone = "+91" + phoneVal;
 
-                const docRef = await addDoc(collection(db, "appointments"), {
+                await addDoc(collection(db, "appointments"), {
                     name: nameInput.value,
-                    phone: formattedPhone, // Saves as +91...
+                    phone: formattedPhone,
                     date: dateInput.value,
                     time: timeInput.value,
                     symptoms: symptomsInput.value,
                     consent: consentInput.checked,
-                    status: 'pending',
-                    timestamp: serverTimestamp()
+                    timestamp: serverTimestamp(),
+                    status: 'pending'
                 });
                 
                 // Update cooldown timer on success
                 localStorage.setItem('lastSubmitTime', Date.now());
                 
                 alert("Success! Your request is sent. You can track your status in the Patient Portal.");
-                
                 submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
                     nameInput.value = '';
@@ -492,16 +492,16 @@ window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', {
 // Auth State Listener
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        if(navBtn) navBtn.innerText = "My Dashboard";
-        loginView.classList.add('hidden');
-        otpView.classList.add('hidden');
-        dashView.classList.remove('hidden');
+        if (navBtn) navBtn.innerText = "My Dashboard";
+        loginView?.classList.add('hidden');
+        otpView?.classList.add('hidden');
+        dashView?.classList.remove('hidden');
         await loadPatientDashboard(user.phoneNumber);
     } else {
-        if(navBtn) navBtn.innerText = "Patient Portal";
-        dashView.classList.add('hidden');
-        otpView.classList.add('hidden');
-        loginView.classList.remove('hidden');
+        if (navBtn) navBtn.innerText = "Patient Portal";
+        dashView?.classList.add('hidden');
+        otpView?.classList.add('hidden');
+        loginView?.classList.remove('hidden');
     }
 });
 
@@ -548,6 +548,7 @@ document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
 // Load Dashboard Data
 async function loadPatientDashboard(phoneNumber) {
     const list = document.getElementById('patient-appointment-list');
+    if (!list) return;
     list.innerHTML = '<p class="text-sm text-slate-500 text-center">Loading...</p>';
     
     try {
@@ -561,11 +562,7 @@ async function loadPatientDashboard(phoneNumber) {
         
         let html = '';
         // Sort locally since we didn't create a composite index in Firebase
-        const docs = snapshot.docs.map(doc => doc.data()).sort((a,b) => {
-            const timeA = a.timestamp ? a.timestamp.toDate() : 0;
-            const timeB = b.timestamp ? b.timestamp.toDate() : 0;
-            return timeB - timeA;
-        });
+        const docs = snapshot.docs.map(doc => doc.data()).sort((a,b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
         
         docs.forEach(data => {
             const statusColor = data.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700';
