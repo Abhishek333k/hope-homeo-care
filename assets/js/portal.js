@@ -35,64 +35,13 @@ window.showToast = (message, type = 'success') => {
 };
 
 // DOM Elements
-const authView = document.getElementById('auth-view');
 const dashboardView = document.getElementById('dashboard-view');
-const phoneStep = document.getElementById('login-phone-step');
-const otpStep = document.getElementById('login-otp-step');
 const logoutBtn = document.getElementById('logout-btn');
-
-let confirmationResult = null;
-
-// Initialize reCAPTCHA
-window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', {
-    'size': 'invisible'
-});
-
-// Send OTP
-document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => {
-    const phoneRaw = document.getElementById('login-phone').value.trim();
-    if(phoneRaw.length !== 10) return window.showToast("Enter a valid 10-digit number.", "error");
-    
-    const phoneNumber = "+91" + phoneRaw;
-    const btn = e.target;
-    btn.innerText = "Sending...";
-    
-    try {
-        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-        phoneStep.classList.add('hidden');
-        otpStep.classList.remove('hidden');
-        window.showToast("OTP Sent!");
-    } catch (error) {
-        console.error(error);
-        window.showToast("Failed to send OTP.", "error");
-        if(window.recaptchaVerifier) window.recaptchaVerifier.render().then(id => window.grecaptcha.reset(id));
-    } finally {
-        btn.innerText = "Send OTP";
-    }
-});
-
-// Verify OTP
-document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) => {
-    const code = document.getElementById('login-otp').value.trim();
-    if(code.length !== 6) return window.showToast("Enter the 6-digit OTP.", "error");
-    
-    const btn = e.target;
-    btn.innerText = "Verifying...";
-    
-    try {
-        await confirmationResult.confirm(code);
-        // onAuthStateChanged will handle the UI switch
-    } catch (error) {
-        console.error(error);
-        window.showToast("Invalid OTP code.", "error");
-    } finally {
-        btn.innerText = "Verify & Login";
-    }
-});
 
 // Fetch Appointments
 const loadDashboard = async (user) => {
     const list = document.getElementById('patient-appointments-list');
+    if (!list) return;
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Loading history...</p>';
     
     // Ensure the phone number matches exactly how it was saved in the DB (usually 10 digits without +91)
@@ -131,25 +80,20 @@ const loadDashboard = async (user) => {
     }
 };
 
-// Auth State Observer
+// Auth State Guard (The Bouncer)
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        authView.classList.add('hidden');
-        dashboardView.classList.remove('hidden');
-        logoutBtn.classList.remove('hidden');
+        // User is allowed in
+        dashboardView?.classList.remove('hidden');
+        logoutBtn?.classList.remove('hidden');
         loadDashboard(user);
     } else {
-        authView.classList.remove('hidden');
-        dashboardView.classList.add('hidden');
-        logoutBtn.classList.add('hidden');
-        phoneStep.classList.remove('hidden');
-        otpStep.classList.add('hidden');
-        document.getElementById('login-phone').value = '';
-        document.getElementById('login-otp').value = '';
+        // User is not logged in. Kick them back to index.html immediately.
+        window.location.replace('index.html');
     }
 });
 
 // Logout
 logoutBtn?.addEventListener('click', () => {
-    signOut(auth).then(() => window.showToast("Logged out successfully."));
+    signOut(auth); // The onAuthStateChanged listener will catch this and kick them out
 });

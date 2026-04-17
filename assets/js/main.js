@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 
 // Custom Toast Notification System
@@ -38,6 +39,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app); auth.useDeviceLanguage();
 
 document.addEventListener('DOMContentLoaded', () => {
     // Mobile Menu Logic
@@ -488,5 +490,71 @@ async function loadDynamicGallery() {
 
 // Call it on load
 loadDynamicGallery();
+
+let currentUser = null;
+const loginModal = document.getElementById('login-modal');
+const phoneStep = document.getElementById('login-phone-step');
+const otpStep = document.getElementById('login-otp-step');
+
+// ReCAPTCHA
+if (document.getElementById('send-otp-btn')) {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', { 'size': 'invisible' });
+}
+
+// Track Auth State
+onAuthStateChanged(auth, (user) => { currentUser = user; });
+
+// Portal Routing Logic
+document.getElementById('nav-portal-btn')?.addEventListener('click', () => {
+    if (currentUser) {
+        window.location.href = 'patient-portal.html'; // Redirect instantly
+    } else {
+        loginModal?.classList.remove('hidden'); // Show Login Pop-up
+        setTimeout(() => loginModal?.classList.remove('opacity-0'), 10);
+    }
+});
+
+document.getElementById('close-login-btn')?.addEventListener('click', () => {
+    if (loginModal) {
+        loginModal.classList.add('opacity-0');
+        setTimeout(() => { 
+            loginModal.classList.add('hidden'); 
+            phoneStep?.classList.remove('hidden'); 
+            otpStep?.classList.add('hidden'); 
+        }, 300);
+    }
+});
+
+// Send OTP
+document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => {
+    const phoneRaw = document.getElementById('login-phone').value.trim();
+    if(phoneRaw.length !== 10) return window.showToast("Enter a valid 10-digit number.", "error");
+    const btn = e.target; btn.innerText = "Sending...";
+    try {
+        window.confirmationResult = await signInWithPhoneNumber(auth, "+91" + phoneRaw, window.recaptchaVerifier);
+        phoneStep?.classList.add('hidden'); otpStep?.classList.remove('hidden');
+    } catch (error) { 
+        console.error(error); 
+        window.showToast("Failed to send OTP.", "error"); 
+    } finally { 
+        btn.innerText = "Send OTP"; 
+    }
+});
+
+// Verify OTP & Redirect
+document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) => {
+    const code = document.getElementById('login-otp').value.trim();
+    if(code.length !== 6) return window.showToast("Enter the 6-digit OTP.", "error");
+    const btn = e.target; btn.innerText = "Verifying...";
+    try {
+        await window.confirmationResult.confirm(code);
+        window.showToast("Login successful! Redirecting...");
+        setTimeout(() => { window.location.href = 'patient-portal.html'; }, 1000); // Route on success
+    } catch (error) { 
+        console.error(error); 
+        window.showToast("Invalid OTP code.", "error"); 
+        btn.innerText = "Verify & Login"; 
+    }
+});
 
 
