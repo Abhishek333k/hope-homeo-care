@@ -26,20 +26,24 @@ const dashboardView = document.getElementById('dashboard-view');
 const logoutBtn = document.getElementById('logout-btn');
 
 // Fetch Appointments
-const loadDashboard = async (user) => {
+const showDashboardView = async (phone, name) => {
     const list = document.getElementById('patient-appointments-list');
     if (!list) return;
+    
+    document.getElementById('dashboard-view').classList.remove('hidden');
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Loading history...</p>';
     
-    // Ensure the phone number matches exactly how it was saved in the DB (usually 10 digits without +91)
-    const localPhone = user.phoneNumber.replace('+91', ''); 
-    
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", localPhone));
-        const snapshot = await getDocs(q);
+        let aptQuery = query(collection(db, "appointments"), where("phone", "==", phone));
+        if (name) {
+            // If a specific family member was selected, filter by their name too
+            aptQuery = query(collection(db, "appointments"), where("phone", "==", phone), where("name", "==", name));
+        }
+        
+        const snapshot = await getDocs(aptQuery);
         
         if(snapshot.empty) {
-            list.innerHTML = '<div class="bg-white p-6 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">You have no appointment history.</p></div>';
+            list.innerHTML = `<div class="bg-white p-6 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">No appointment history found${name ? ' for ' + name : ''}.</p></div>`;
             return;
         }
         
@@ -54,7 +58,8 @@ const loadDashboard = async (user) => {
                         <p class="font-bold text-slate-800 text-lg">${data.date} <span class="text-sm font-normal text-slate-500 ml-2">| ${data.time || 'Time TBD'}</span></p>
                         <p class="text-sm text-slate-600 mt-1 italic">"${data.symptoms}"</p>
                     </div>
-                    <div class="shrink-0">
+                    <div class="shrink-0 flex items-center gap-3">
+                        ${!name ? `<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-100 px-2 py-1 rounded">${data.name}</span>` : ''}
                         <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${statusColor}">${statusText}</span>
                     </div>
                 </div>
@@ -67,20 +72,61 @@ const loadDashboard = async (user) => {
     }
 };
 
+const loadFamilyProfiles = async (user) => {
+    const localPhone = user.phoneNumber.replace('+91', '');
+    try {
+        const q = query(collection(db, "patients"), where("phone", "==", localPhone));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.size === 0) {
+            // No EMR profile found yet. Just load the dashboard based on phone.
+            showDashboardView(localPhone, null);
+        } else if (snapshot.size === 1) {
+            // Only one person. Auto-select them.
+            const patientData = snapshot.docs[0].data();
+            showDashboardView(localPhone, patientData.name);
+        } else {
+            // MULTIPLE PROFILES FOUND - Show Family Selector
+            document.getElementById('dashboard-view').classList.add('hidden');
+            const selectorView = document.getElementById('profile-selector-view');
+            const container = document.getElementById('family-profiles-container');
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const p = doc.data();
+                html += `
+                    <button onclick="window.selectProfile('${p.name}')" class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
+                        <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">${p.name.charAt(0).toUpperCase()}</div>
+                        <span class="font-semibold text-slate-700 truncate w-full">${p.name}</span>
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+            selectorView.classList.remove('hidden');
+        }
+    } catch (err) {
+        console.error("Profile load error:", err);
+        showDashboardView(localPhone, null);
+    }
+};
+
+// Global function to handle profile selection
+window.selectProfile = (selectedName) => {
+    document.getElementById('profile-selector-view').classList.add('hidden');
+    showDashboardView(auth.currentUser.phoneNumber.replace('+91', ''), selectedName);
+};
+
 // Auth State Guard (The Bouncer)
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // User is allowed in
-        dashboardView?.classList.remove('hidden');
         logoutBtn?.classList.remove('hidden');
-        loadDashboard(user);
+        loadFamilyProfiles(user);
     } else {
-        // User is not logged in. Kick them back to index.html immediately.
         window.location.replace('index.html');
     }
 });
 
 // Logout
 logoutBtn?.addEventListener('click', () => {
-    signOut(auth); // The onAuthStateChanged listener will catch this and kick them out
+    signOut(auth);
 });
