@@ -195,6 +195,9 @@ async function loadBloggerFeed() {
 
     try {
         const response = await fetch(blogUrl);
+        if (!response.ok) {
+            throw new Error('Blog feed unavailable');
+        }
         const data = await response.json();
 
         if (!data.feed || !data.feed.entry || data.feed.entry.length === 0) {
@@ -238,8 +241,10 @@ async function loadBloggerFeed() {
 
         grid.innerHTML = posts.join('');
     } catch (error) {
-        console.error('Blogger Feed Error:', error);
-        grid.innerHTML = '<p class="text-center text-slate-500 col-span-3">Unable to load latest articles at this time.</p>';
+        console.warn("Blog module silenced: Blog is not yet public or configured.");
+        if (grid) {
+            grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">Health articles coming soon.</div>';
+        }
     }
 }
 
