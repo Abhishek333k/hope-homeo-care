@@ -464,123 +464,152 @@ async function loadDynamicGallery() {
 // Call it on load
 loadDynamicGallery();
 
-// Patient Portal DOM
-const portalModal = document.getElementById('portal-modal');
-const portalBox = document.getElementById('portal-box');
-const loginView = document.getElementById('portal-login-view');
-const otpView = document.getElementById('portal-otp-view');
-const dashView = document.getElementById('portal-dashboard-view');
-const navBtn = document.getElementById('nav-portal-btn');
+// UI Elements
+const loginModal = document.getElementById('login-modal');
+const phoneStep = document.getElementById('login-phone-step');
+const otpStep = document.getElementById('login-otp-step');
+const dashboardView = document.getElementById('patient-dashboard');
 
-const openPortal = () => {
-    portalModal.classList.remove('hidden');
-    setTimeout(() => { portalModal.classList.remove('opacity-0'); portalBox.classList.remove('scale-95'); }, 10);
-};
-const closePortal = () => {
-    portalModal.classList.add('opacity-0'); portalBox.classList.add('scale-95');
-    setTimeout(() => { portalModal.classList.add('hidden'); }, 300);
-};
+let confirmationResult = null;
 
-navBtn?.addEventListener('click', openPortal);
-document.getElementById('close-portal-btn')?.addEventListener('click', closePortal);
+// Setup ReCAPTCHA (Invisible)
+if (document.getElementById('send-otp-btn')) {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', {
+        'size': 'invisible',
+        'callback': (response) => { /* reCAPTCHA solved */ }
+    });
+}
 
-// Setup Invisible Recaptcha
-window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', {
-    'size': 'invisible'
+// Open Login
+document.getElementById('nav-login-btn')?.addEventListener('click', () => {
+    loginModal.classList.remove('hidden');
+    setTimeout(() => loginModal.classList.remove('opacity-0'), 10);
 });
-
-// Auth State Listener
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        if (navBtn) navBtn.innerText = "My Dashboard";
-        loginView?.classList.add('hidden');
-        otpView?.classList.add('hidden');
-        dashView?.classList.remove('hidden');
-        await loadPatientDashboard(user.phoneNumber);
-    } else {
-        if (navBtn) navBtn.innerText = "Patient Portal";
-        dashView?.classList.add('hidden');
-        otpView?.classList.add('hidden');
-        loginView?.classList.remove('hidden');
-    }
+document.getElementById('close-login-btn')?.addEventListener('click', () => {
+    loginModal.classList.add('opacity-0');
+    setTimeout(() => loginModal.classList.add('hidden'), 300);
 });
 
 // Send OTP
-document.getElementById('send-otp-btn')?.addEventListener('click', async () => {
-    const phone = "+91" + document.getElementById('portal-phone').value.trim();
-    if(phone.length !== 13) return alert("Enter a valid 10-digit number.");
+document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => {
+    const phoneRaw = document.getElementById('login-phone').value.trim();
+    if(phoneRaw.length !== 10) return alert("Enter a valid 10-digit number.");
+    const phoneNumber = "+91" + phoneRaw;
+    const btn = e.target;
     
-    const btn = document.getElementById('send-otp-btn');
     btn.innerText = "Sending...";
     try {
-        window.confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-        loginView.classList.add('hidden');
-        otpView.classList.remove('hidden');
+        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        phoneStep.classList.add('hidden');
+        otpStep.classList.remove('hidden');
     } catch (error) {
         console.error("SMS Error:", error);
-        alert("Failed to send OTP. Please try again.");
+        alert("Failed to send OTP. You may have hit the daily free limit.");
+        if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.render().then(widgetId => {
+                if (window.grecaptcha) window.grecaptcha.reset(widgetId);
+            });
+        }
+    } finally {
         btn.innerText = "Send OTP";
     }
 });
 
 // Verify OTP
-document.getElementById('verify-otp-btn')?.addEventListener('click', async () => {
-    const code = document.getElementById('portal-otp').value.trim();
-    if(code.length !== 6) return;
+document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) => {
+    const code = document.getElementById('login-otp').value.trim();
+    if(code.length !== 6) return alert("Enter the 6-digit OTP.");
+    const btn = e.target;
     
-    const btn = document.getElementById('verify-otp-btn');
     btn.innerText = "Verifying...";
     try {
-        await window.confirmationResult.confirm(code);
-        // onAuthStateChanged will handle the UI switch
+        await confirmationResult.confirm(code);
+        loginModal.classList.add('opacity-0');
+        setTimeout(() => loginModal.classList.add('hidden'), 300);
     } catch (error) {
-        console.error("Verify Error:", error);
-        alert("Invalid Code.");
+        console.error("Verification Error:", error);
+        alert("Invalid OTP code.");
+    } finally {
         btn.innerText = "Verify & Login";
     }
 });
 
-// Logout
-document.getElementById('portal-logout-btn')?.addEventListener('click', () => {
-    signOut(auth);
-});
-
 // Load Dashboard Data
-async function loadPatientDashboard(phoneNumber) {
-    const list = document.getElementById('patient-appointment-list');
+const loadDashboard = async (user) => {
+    const list = document.getElementById('patient-appointments-list');
     if (!list) return;
-    list.innerHTML = '<p class="text-sm text-slate-500 text-center">Loading...</p>';
+    list.innerHTML = '<p class="text-slate-500 animate-pulse text-center py-12">Loading your medical history...</p>';
+    
+    // Strip the +91 to match how your booking form currently saves numbers
+    const localPhone = user.phoneNumber.replace('+91', '');
     
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", phoneNumber));
+        const q = query(collection(db, "appointments"), where("phone", "==", localPhone));
         const snapshot = await getDocs(q);
         
         if(snapshot.empty) {
-            list.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">No appointments found.</p>';
+            list.innerHTML = '<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm"><p class="text-slate-500">You have no appointment history.</p></div>';
             return;
         }
         
         let html = '';
-        // Sort locally since we didn't create a composite index in Firebase
+        // Sort by timestamp if available, otherwise just render
         const docs = snapshot.docs.map(doc => doc.data()).sort((a,b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
-        
+
         docs.forEach(data => {
             const statusColor = data.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700';
             const statusText = data.status === 'pending' ? 'Pending Review' : 'Confirmed';
-            const date = data.date || 'N/A';
             
             html += `
-                <div class="border border-slate-200 rounded-xl p-4 relative">
-                    <span class="absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded-md ${statusColor}">${statusText}</span>
-                    <p class="font-bold text-slate-800">${data.name}</p>
-                    <p class="text-sm text-slate-500 mt-1"><span class="material-icons-round text-[14px] align-middle">event</span> ${date}</p>
-                    ${data.treatment ? `<div class="mt-3 p-3 bg-slate-50 rounded-lg text-sm text-slate-700"><span class="font-bold">Doctor's Note:</span><br>${data.treatment}</div>` : ''}
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4 hover:border-teal-300 transition-colors">
+                    <div>
+                        <p class="font-bold text-slate-800 text-lg">${data.date} <span class="text-sm font-normal text-slate-500 ml-2">| ${data.time || 'Time TBD'}</span></p>
+                        <p class="text-sm text-slate-600 mt-1 italic">"${data.symptoms}"</p>
+                        ${data.treatment ? `<div class="mt-4 p-4 bg-slate-50 rounded-xl text-sm text-slate-700 border-l-4 border-teal-500"><span class="font-bold text-teal-700 uppercase tracking-wider text-[10px]">Doctor's Observations:</span><br>${data.treatment}</div>` : ''}
+                    </div>
+                    <div class="shrink-0">
+                        <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${statusColor}">${statusText}</span>
+                    </div>
                 </div>
             `;
         });
         list.innerHTML = html;
-    } catch(error) {
-        console.error("Dashboard Error:", error);
-        list.innerHTML = '<p class="text-sm text-rose-500 text-center">Error loading data.</p>';
+    } catch(err) {
+        console.error("Dashboard error:", err);
+        list.innerHTML = '<p class="text-rose-500 text-center py-12">Error loading medical history.</p>';
     }
-}
+};
+
+// Auth State Observer
+onAuthStateChanged(auth, (user) => {
+    const loginBtn = document.getElementById('nav-login-btn');
+    const heroSection = document.getElementById('home');
+    const statsSection = document.querySelector('section.bg-white.py-16'); // Stats section
+    const servicesSection = document.getElementById('services');
+    const testimonialsSection = document.getElementById('testimonials');
+    const gallerySection = document.getElementById('gallery');
+    const blogsSection = document.getElementById('blogs');
+    const aboutSection = document.getElementById('about');
+    const contactSection = document.getElementById('contact');
+    
+    // Elements to hide/show
+    const sectionsToToggle = [heroSection, statsSection, servicesSection, testimonialsSection, gallerySection, blogsSection, aboutSection, contactSection];
+
+    if (user) {
+        // User is logged in
+        loginBtn?.classList.add('hidden');
+        sectionsToToggle.forEach(s => s?.classList.add('hidden'));
+        dashboardView?.classList.remove('hidden');
+        loadDashboard(user);
+    } else {
+        // User is logged out
+        loginBtn?.classList.remove('hidden');
+        sectionsToToggle.forEach(s => s?.classList.remove('hidden'));
+        dashboardView?.classList.add('hidden');
+    }
+});
+
+// Logout
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+    signOut(auth);
+});
