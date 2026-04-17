@@ -1,21 +1,8 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { auth, db } from './firebase-init.js';
 
-// YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
-  authDomain: "hope-homeo-care.firebaseapp.com",
-  projectId: "hope-homeo-care",
-  storageBucket: "hope-homeo-care.firebasestorage.app",
-  messagingSenderId: "962992614809",
-  appId: "1:962992614809:web:8d61d27c8881588c59f708"
-};
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-auth.useDeviceLanguage();
 
 // Toast System
 window.showToast = (message, type = 'success') => {
