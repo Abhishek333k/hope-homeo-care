@@ -2,8 +2,11 @@ name: Sync Google Reviews
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 */2 * * *' # Runs exactly every 2 hours
   workflow_dispatch:
+
+permissions:
+  contents: write # CRITICAL: Allows the bot to commit and push to the repo
 
 jobs:
   update-reviews:
