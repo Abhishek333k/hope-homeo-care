@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
 
             try {
-                await addDoc(collection(db, "appointments"), {
+                const docRef = await addDoc(collection(db, "appointments"), {
                     name: nameInput.value,
                     phone: "+91 " + phoneInput.value,
                     date: dateInput.value,
@@ -138,8 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     status: 'pending'
                 });
                 
+                const bookingId = docRef.id;
+                
                 // Update cooldown timer on success
                 localStorage.setItem('lastSubmitTime', Date.now());
+                
+                alert(`Success! Your appointment request is sent.\n\nIMPORTANT: Your Booking Reference is:\n${bookingId}\n\nPlease save this ID to track your status.`);
                 
                 submitBtn.innerText = "Request Sent!";
                 setTimeout(() => {
@@ -457,3 +461,55 @@ async function loadDynamicGallery() {
 
 // Call it on load
 loadDynamicGallery();
+
+// Status Tracker Logic
+const statusModal = document.getElementById('status-modal');
+const statusBox = document.getElementById('status-box');
+
+const openStatus = () => {
+    statusModal.classList.remove('hidden');
+    setTimeout(() => { statusModal.classList.remove('opacity-0'); statusBox.classList.remove('scale-95'); }, 10);
+};
+const closeStatus = () => {
+    statusModal.classList.add('opacity-0'); statusBox.classList.add('scale-95');
+    setTimeout(() => { statusModal.classList.add('hidden'); document.getElementById('status-result').classList.add('hidden'); }, 300);
+};
+
+document.getElementById('nav-track-btn')?.addEventListener('click', openStatus);
+document.getElementById('close-status-btn')?.addEventListener('click', closeStatus);
+
+document.getElementById('check-status-btn')?.addEventListener('click', async () => {
+    const id = document.getElementById('track-id').value.trim();
+    const phone = document.getElementById('track-phone').value.trim();
+    const resultDiv = document.getElementById('status-result');
+    const btn = document.getElementById('check-status-btn');
+    
+    if(!id || !phone) return alert("Please enter both ID and Phone Number.");
+    
+    btn.innerHTML = "Checking...";
+    try {
+        const docSnap = await getDoc(doc(db, "appointments", id));
+        if (docSnap.exists() && docSnap.data().phone === ("+91 " + phone)) {
+            const data = docSnap.data();
+            const status = data.status || 'pending';
+            let statusHtml = '';
+            
+            if(status === 'pending') {
+                statusHtml = `<div class="bg-amber-50 border-amber-200 text-amber-700 flex items-center gap-3 p-4 rounded-xl border"><span class="material-icons-round">hourglass_top</span> <div><p class="font-bold">Status: Pending</p><p class="text-sm">The clinic is reviewing your request.</p></div></div>`;
+            } else if (status === 'addressed') {
+                statusHtml = `<div class="bg-teal-50 border-teal-200 text-teal-700 flex items-center gap-3 p-4 rounded-xl border"><span class="material-icons-round">check_circle</span> <div><p class="font-bold">Status: Confirmed</p><p class="text-sm">Dr. Joshua has reviewed your file.</p></div></div>`;
+            }
+            
+            resultDiv.innerHTML = statusHtml;
+            resultDiv.className = "mt-6 p-0 rounded-xl block"; // Container is now plain since inner div has background
+        } else {
+            resultDiv.innerHTML = `<p class="text-rose-600 font-medium"><span class="material-icons-round align-middle">error</span> No matching record found. Check your ID and Phone.</p>`;
+            resultDiv.className = "mt-6 p-4 rounded-xl border border-rose-200 bg-rose-50 block";
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Error checking status.");
+    } finally {
+        btn.innerHTML = "Check Status";
+    }
+});
