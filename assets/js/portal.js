@@ -292,3 +292,31 @@ const loadProfileDetails = async () => {
 
 const logoutBtn = document.getElementById('logout-btn');
 logoutBtn?.addEventListener('click', () => signOut(auth));
+
+// Accessibility Hotkeys
+document.addEventListener('keydown', (e) => {
+    // Escape to close internal booking
+    if (e.key === 'Escape') {
+        const intModal = document.getElementById('internal-booking-modal');
+        if (intModal && !intModal.classList.contains('hidden')) {
+            window.closeInternalBooking();
+        }
+        // Escape to close family selector (if they changed their mind)
+        if (currentCompositeId && !document.getElementById('profile-selector-view').classList.contains('hidden')) {
+            window.selectProfile(currentPatientName, currentCleanPhone); // Reverts to last selected
+        }
+    }
+
+    // Alt Modifiers for Logged-In Users
+    if (e.altKey && auth.currentUser && currentCompositeId) {
+        switch(e.key.toLowerCase()) {
+            case '1': e.preventDefault(); document.getElementById('tab-dashboard')?.click(); break;
+            case '2': e.preventDefault(); document.getElementById('tab-records')?.click(); break;
+            case '3': e.preventDefault(); document.getElementById('tab-profile')?.click(); break;
+            case 'b': 
+                e.preventDefault(); 
+                if (typeof window.openInternalBooking === 'function') window.openInternalBooking();
+                break;
+        }
+    }
+});

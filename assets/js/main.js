@@ -569,3 +569,15 @@ document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) =
 });
 
 
+/ /   A c c e s s i b i l i t y :   L i g h t b o x   E s c a p e 
+ d o c u m e n t . a d d E v e n t L i s t e n e r ( ' k e y d o w n ' ,   ( e )   = >   { 
+         i f   ( e . k e y   = = =   ' E s c a p e ' )   { 
+                 c o n s t   l i g h t b o x   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l i g h t b o x - m o d a l ' ) ; 
+                 i f   ( l i g h t b o x   & &   ! l i g h t b o x . c l a s s L i s t . c o n t a i n s ( ' h i d d e n ' ) )   { 
+                         l i g h t b o x . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
+                         c o n s t   i m g   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l i g h t b o x - i m a g e ' ) ; 
+                         i f   ( i m g )   i m g . s r c   =   ' ' ; 
+                 } 
+         } 
+ } ) ;  
+ 
