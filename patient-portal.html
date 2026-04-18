@@ -154,6 +154,14 @@
                     <input type="text" id="int-book-date" placeholder="Select Date" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Time</label>
+                    <select id="int-book-time" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
+                        <option value="" disabled selected>Select a session...</option>
+                        <option value="Morning Session (10:00 AM - 2:00 PM)">Morning Session (10:00 AM - 2:00 PM)</option>
+                        <option value="Evening Session (5:00 PM - 9:00 PM)">Evening Session (5:00 PM - 9:00 PM)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Brief Symptoms / Reason</label>
                     <textarea id="int-book-symptoms" required rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none" placeholder="e.g., Fever, follow-up..."></textarea>
                 </div>

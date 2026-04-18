@@ -51,44 +51,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Calendar Validation (Blocked Dates from Firestore) ---
-    let blockedDates = [];
-    const dateInput = document.getElementById('patient-date');
-    let fp = null; // Flatpickr Instance
+    // --- Dynamic Session Validation ---
+    let blockedSlots = [];
+    
+    // Function to wire up the dynamic dropdown disable logic
+    const applyDynamicValidation = (dateInputId, timeSelectId) => {
+        const dateInput = document.getElementById(dateInputId);
+        const timeSelect = document.getElementById(timeSelectId);
+        let fp = null;
 
-    const loadBlockedDates = async () => {
-        try {
-            const docSnap = await getDoc(doc(db, "settings", "calendar"));
-            if (docSnap.exists() && docSnap.data().blockedDates) {
-                blockedDates = docSnap.data().blockedDates; // Array of "YYYY-MM-DD"
-                
-                // If flatpickr is already initialized, update it
-                if (fp) {
-                    fp.set('disable', [
-                        function(date) { return (date.getDay() === 0); }, // Always disable Sundays
-                        ...blockedDates
-                    ]);
+        if (!dateInput || !timeSelect) return;
+
+        // 1. Initialize Flatpickr (Only fully disable if "All Day" is blocked)
+        if (typeof flatpickr !== 'undefined') {
+            fp = flatpickr(dateInput, {
+                minDate: "today",
+                disable: [
+                    function(date) { 
+                        if (date.getDay() === 0) return true; // Always disable Sunday
+                        // Localize date to YYYY-MM-DD safely to prevent timezone shifting bugs
+                        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                        return blockedSlots.includes(`${localDate}|All`);
+                    }
+                ],
+                dateFormat: "Y-m-d",
+                static: true, 
+                disableMobile: "true",
+                onChange: function(selectedDates, dateStr, instance) {
+                    // 2. Dynamically Lock/Unlock the Time Dropdown Options
+                    Array.from(timeSelect.options).forEach(opt => {
+                        opt.disabled = false; // Reset first
+                        opt.text = opt.text.replace(' (Unavailable)', '');
+                    });
+
+                    if (blockedSlots.includes(`${dateStr}|Morning`)) {
+                        const opt = Array.from(timeSelect.options).find(o => o.value.includes('Morning'));
+                        if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                    }
+                    if (blockedSlots.includes(`${dateStr}|Evening`)) {
+                        const opt = Array.from(timeSelect.options).find(o => o.value.includes('Evening'));
+                        if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                    }
+                    
+                    // Auto-clear time selection if the newly selected date blocks their previously chosen time
+                    if (timeSelect.options[timeSelect.selectedIndex]?.disabled) {
+                        timeSelect.value = "";
+                    }
                 }
-            }
-        } catch (error) {
-            console.error("Failed to load calendar settings:", error);
+            });
         }
+
+        // Fetch real-time slots
+        const fetchSlots = async () => {
+            try {
+                const docSnap = await getDoc(doc(db, "settings", "calendar"));
+                if (docSnap.exists() && docSnap.data().blockedSlots) {
+                    blockedSlots = docSnap.data().blockedSlots;
+                    if (fp) fp.redraw(); // Refresh calendar to grey out "All Day" blocks
+                }
+            } catch (error) {
+                console.error("Failed to load calendar settings:", error);
+            }
+        };
+        fetchSlots();
     };
 
-    if (dateInput) {
-        fp = flatpickr(dateInput, {
-            minDate: "today",
-            disable: [
-                function(date) { return (date.getDay() === 0); } // Default: Disable Sundays
-            ],
-            dateFormat: "Y-m-d",
-            static: true, 
-            disableMobile: "true" 
-        });
-        
-        // Fetch real-time blocked dates from Firestore
-        loadBlockedDates();
-    }
+    // Apply to Public Booking Form (main.js)
+    applyDynamicValidation('patient-date', 'patient-time');
 
     const modal = document.getElementById('booking-modal');
     if (!modal) return;

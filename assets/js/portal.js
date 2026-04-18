@@ -224,21 +224,71 @@ window.closeInternalBooking = () => {
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
-// Initialize Flatpickr for Internal Booking
-document.addEventListener('DOMContentLoaded', () => {
-    const intDateInput = document.getElementById('int-book-date');
-    if (intDateInput && typeof flatpickr !== 'undefined') {
-        flatpickr(intDateInput, {
+// --- Dynamic Session Validation ---
+let blockedSlots = [];
+
+// Function to wire up the dynamic dropdown disable logic
+const applyDynamicValidation = (dateInputId, timeSelectId) => {
+    const dateInput = document.getElementById(dateInputId);
+    const timeSelect = document.getElementById(timeSelectId);
+    let fp = null;
+
+    if (!dateInput || !timeSelect) return;
+
+    // 1. Initialize Flatpickr (Only fully disable if "All Day" is blocked)
+    if (typeof flatpickr !== 'undefined') {
+        fp = flatpickr(dateInput, {
             minDate: "today",
             disable: [
-                function(date) { return (date.getDay() === 0); } // Disable Sundays
+                function(date) { 
+                    if (date.getDay() === 0) return true; // Always disable Sunday
+                    const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                    return blockedSlots.includes(`${localDate}|All`);
+                }
             ],
             dateFormat: "Y-m-d",
-            static: true,
-            disableMobile: "true"
+            static: true, 
+            disableMobile: "true",
+            onChange: function(selectedDates, dateStr, instance) {
+                // 2. Dynamically Lock/Unlock the Time Dropdown Options
+                Array.from(timeSelect.options).forEach(opt => {
+                    opt.disabled = false; // Reset first
+                    opt.text = opt.text.replace(' (Unavailable)', '');
+                });
+
+                if (blockedSlots.includes(`${dateStr}|Morning`)) {
+                    const opt = Array.from(timeSelect.options).find(o => o.value.includes('Morning'));
+                    if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                }
+                if (blockedSlots.includes(`${dateStr}|Evening`)) {
+                    const opt = Array.from(timeSelect.options).find(o => o.value.includes('Evening'));
+                    if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                }
+                
+                if (timeSelect.options[timeSelect.selectedIndex]?.disabled) {
+                    timeSelect.value = "";
+                }
+            }
         });
     }
-});
+
+    // Fetch real-time slots
+    const fetchSlots = async () => {
+        try {
+            const docSnap = await getDoc(doc(db, "settings", "calendar"));
+            if (docSnap.exists() && docSnap.data().blockedSlots) {
+                blockedSlots = docSnap.data().blockedSlots;
+                if (fp) fp.redraw();
+            }
+        } catch (error) {
+            console.error("Failed to load calendar settings:", error);
+        }
+    };
+    fetchSlots();
+};
+
+// Apply to Internal Portal Booking Form
+applyDynamicValidation('int-book-date', 'int-book-time');
 
 document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -250,6 +300,7 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
             name: currentPatientName || "Unknown",
             phone: currentCleanPhone,
             date: document.getElementById('int-book-date').value,
+            time: document.getElementById('int-book-time').value,
             symptoms: document.getElementById('int-book-symptoms').value,
             consent: true,
             status: "pending",
