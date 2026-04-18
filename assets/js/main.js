@@ -431,153 +431,116 @@ fetchBlogPosts();
 loadGoogleReviews();
 loadActiveCampaign();
 
+let globalGalleryData = [];
+let currentGalleryIndex = 0;
+
 const loadPublicGallery = async () => {
-    const grid = document.getElementById('gallery-bento-grid');
-    if (!grid) return;
+    const previewGrid = document.getElementById('gallery-preview-grid');
+    if (!previewGrid) return;
 
     try {
         const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-            grid.innerHTML = '<div class="col-span-full w-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
+            previewGrid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
             return;
         }
 
-        let html = '';
-        let index = 0;
-        
-        // The Apple-style Bento spanning pattern
-        const bentoPattern = [
-            'md:col-span-2 md:row-span-2', // Big Hero Square
-            'md:col-span-1 md:row-span-1', // Standard
-            'md:col-span-1 md:row-span-1', // Standard
-            'md:col-span-2 md:row-span-1', // Wide Rectangle
-            'md:col-span-1 md:row-span-2', // Tall Rectangle
-            'md:col-span-1 md:row-span-1', // Standard
-            'md:col-span-2 md:row-span-1', // Wide Rectangle
-        ];
+        globalGalleryData = [];
+        snapshot.forEach(doc => globalGalleryData.push(doc.data().imageUrl));
 
-        snapshot.forEach(doc => {
-            // Limit to max 7 items for the preview grid so it doesn't break the layout
-            if (index >= 7) return; 
-            
-            const img = doc.data().imageUrl;
-            const spanClass = bentoPattern[index % bentoPattern.length]; // Apply the pattern
-            
-            html += `
-                <div class="gallery-item ${spanClass} rounded-[2rem] overflow-hidden shadow-sm relative group cursor-pointer bg-slate-100">
-                    <img src="${img}" alt="Clinic Image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                        <div class="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-2 text-white font-bold">
-                            <span class="bg-white/20 backdrop-blur-md p-2 rounded-full flex items-center justify-center">
-                                <span class="material-icons-round text-[18px]">zoom_in</span>
-                            </span>
-                        </div>
+        // 1. Populate Compact Preview (Max 3 images)
+        let previewHtml = '';
+        for(let i=0; i < Math.min(3, globalGalleryData.length); i++) {
+            const hideClass = i > 0 ? 'hidden md:block' : '';
+            previewHtml += `
+                <div onclick="window.openFullGallery(${i})" class="${hideClass} rounded-2xl overflow-hidden cursor-pointer group relative shadow-sm">
+                    <img src="${globalGalleryData[i]}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/30 transition-colors flex items-center justify-center">
+                        <span class="material-icons-round text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg">zoom_out_map</span>
                     </div>
                 </div>
             `;
-            index++;
-        });
-        
-        grid.innerHTML = html;
+        }
+        previewGrid.innerHTML = previewHtml;
 
-        // Safely attach Lightbox listener to the new Bento grid
-        document.querySelectorAll('.gallery-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const imgNode = e.currentTarget.querySelector('img');
-                if (imgNode && imgNode.src) {
-                    document.getElementById('lightbox-image').src = imgNode.src;
-                    document.getElementById('lightbox-modal').classList.remove('hidden');
-                }
+        // 2. Populate Thumbnails in Modal
+        const thumbContainer = document.getElementById('gallery-thumbnails');
+        if (thumbContainer) {
+            let thumbHtml = '';
+            globalGalleryData.forEach((url, idx) => {
+                thumbHtml += `
+                    <img onclick="window.setGalleryImage(${idx})" id="thumb-${idx}" src="${url}" 
+                         class="h-full aspect-video object-cover rounded-lg cursor-pointer opacity-50 hover:opacity-100 transition-all border-2 border-transparent snap-center">
+                `;
             });
-        });
+            thumbContainer.innerHTML = thumbHtml;
+        }
 
     } catch (error) {
         console.error("Gallery fetch error:", error);
-        grid.innerHTML = '<div class="col-span-full w-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
+        previewGrid.innerHTML = '<div class="col-span-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
     }
 };
 
-// Call it on load
+// Slider Logic
+window.openFullGallery = (startIndex = 0) => {
+    if (globalGalleryData.length === 0) return;
+    const modal = document.getElementById('advanced-gallery-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    window.setGalleryImage(startIndex);
+};
+
+window.closeFullGallery = () => {
+    const modal = document.getElementById('advanced-gallery-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+window.setGalleryImage = (index) => {
+    if (index < 0) index = globalGalleryData.length - 1;
+    if (index >= globalGalleryData.length) index = 0;
+    currentGalleryIndex = index;
+    
+    const mainImg = document.getElementById('gallery-main-view');
+    if (!mainImg) return;
+    mainImg.style.opacity = 0; // Fade out
+    setTimeout(() => {
+        mainImg.src = globalGalleryData[currentGalleryIndex];
+        mainImg.style.opacity = 1; // Fade in
+    }, 150);
+
+    // Highlight active thumbnail
+    globalGalleryData.forEach((_, idx) => {
+        const thumb = document.getElementById(`thumb-${idx}`);
+        if (thumb) {
+            if (idx === currentGalleryIndex) {
+                thumb.classList.remove('opacity-50', 'border-transparent');
+                thumb.classList.add('opacity-100', 'border-teal-500');
+                thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                thumb.classList.add('opacity-50', 'border-transparent');
+                thumb.classList.remove('opacity-100', 'border-teal-500');
+            }
+        }
+    });
+};
+
+window.nextGalleryImage = () => window.setGalleryImage(currentGalleryIndex + 1);
+window.prevGalleryImage = () => window.setGalleryImage(currentGalleryIndex - 1);
+
+// Add Keyboard controls for the Slider
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('advanced-gallery-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+        if (e.key === 'ArrowRight') window.nextGalleryImage();
+        if (e.key === 'ArrowLeft') window.prevGalleryImage();
+        if (e.key === 'Escape') window.closeFullGallery();
+    }
+});
+
 loadPublicGallery();
-
-let currentUser = null;
-const loginModal = document.getElementById('login-modal');
-const phoneStep = document.getElementById('login-phone-step');
-const otpStep = document.getElementById('login-otp-step');
-
-// ReCAPTCHA
-if (document.getElementById('send-otp-btn')) {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'send-otp-btn', { 'size': 'invisible' });
-}
-
-// Track Auth State
-onAuthStateChanged(auth, (user) => { currentUser = user; });
-
-// Portal Routing Logic
-document.getElementById('nav-portal-btn')?.addEventListener('click', () => {
-    if (currentUser) {
-        window.location.href = 'patient-portal.html'; // Redirect instantly
-    } else {
-        loginModal?.classList.remove('hidden'); // Show Login Pop-up
-        setTimeout(() => loginModal?.classList.remove('opacity-0'), 10);
-    }
-});
-
-document.getElementById('close-login-btn')?.addEventListener('click', () => {
-    if (loginModal) {
-        loginModal.classList.add('opacity-0');
-        setTimeout(() => { 
-            loginModal.classList.add('hidden'); 
-            phoneStep?.classList.remove('hidden'); 
-            otpStep?.classList.add('hidden'); 
-        }, 300);
-    }
-});
-
-// Send OTP
-document.getElementById('send-otp-btn')?.addEventListener('click', async (e) => {
-    const phoneRaw = document.getElementById('login-phone').value.trim();
-    if(phoneRaw.length !== 10) return window.showToast("Enter a valid 10-digit number.", "error");
-    const btn = e.target; btn.innerText = "Sending...";
-    try {
-        window.confirmationResult = await signInWithPhoneNumber(auth, "+91" + phoneRaw, window.recaptchaVerifier);
-        phoneStep?.classList.add('hidden'); otpStep?.classList.remove('hidden');
-    } catch (error) { 
-        console.error(error); 
-        window.showToast("Failed to send OTP.", "error"); 
-    } finally { 
-        btn.innerText = "Send OTP"; 
-    }
-});
-
-// Verify OTP & Redirect
-document.getElementById('verify-otp-btn')?.addEventListener('click', async (e) => {
-    const code = document.getElementById('login-otp').value.trim();
-    if(code.length !== 6) return window.showToast("Enter the 6-digit OTP.", "error");
-    const btn = e.target; btn.innerText = "Verifying...";
-    try {
-        await window.confirmationResult.confirm(code);
-        window.showToast("Login successful! Redirecting...");
-        setTimeout(() => { window.location.href = 'patient-portal.html'; }, 1000); // Route on success
-    } catch (error) { 
-        console.error(error); 
-        window.showToast("Invalid OTP code.", "error"); 
-        btn.innerText = "Verify & Login"; 
-    }
-});
-
-
-/ /   A c c e s s i b i l i t y :   L i g h t b o x   E s c a p e 
- d o c u m e n t . a d d E v e n t L i s t e n e r ( ' k e y d o w n ' ,   ( e )   = >   { 
-         i f   ( e . k e y   = = =   ' E s c a p e ' )   { 
-                 c o n s t   l i g h t b o x   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l i g h t b o x - m o d a l ' ) ; 
-                 i f   ( l i g h t b o x   & &   ! l i g h t b o x . c l a s s L i s t . c o n t a i n s ( ' h i d d e n ' ) )   { 
-                         l i g h t b o x . c l a s s L i s t . a d d ( ' h i d d e n ' ) ; 
-                         c o n s t   i m g   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' l i g h t b o x - i m a g e ' ) ; 
-                         i f   ( i m g )   i m g . s r c   =   ' ' ; 
-                 } 
-         } 
- } ) ;  
- 

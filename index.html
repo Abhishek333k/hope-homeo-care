@@ -338,30 +338,22 @@
     </section>
 
     <!-- Premium "Bento Grid" Clinic Gallery -->
-    <section id="gallery" class="py-24 bg-white relative overflow-hidden">
+    <section id="gallery" class="py-20 bg-slate-50 relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            
-            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                 <div>
-                    <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2>
-                    <p class="text-lg text-slate-500 mt-4 max-w-xl">Experience our state-of-the-art healing environment, designed specifically for your comfort and recovery.</p>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2>
+                    <p class="text-slate-500 mt-3 max-w-xl">Experience our state-of-the-art healing environment.</p>
                 </div>
-                <button id="view-all-gallery-btn-desktop" class="hidden md:inline-flex items-center gap-2 bg-slate-900 text-white font-bold py-3.5 px-8 rounded-full hover:bg-teal-600 transition-colors shadow-xl hover:shadow-teal-500/30">
-                    Explore Full Gallery <span class="material-icons-round text-sm">arrow_forward</span>
+                <button onclick="window.openFullGallery(0)" class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
+                    View Full Gallery <span class="material-icons-round text-sm">photo_library</span>
                 </button>
             </div>
 
-            <div id="gallery-bento-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[180px] md:auto-rows-[280px]">
-                <div class="bg-slate-100 rounded-[2rem] animate-pulse md:col-span-2 md:row-span-2"></div>
-                <div class="bg-slate-100 rounded-[2rem] animate-pulse"></div>
-                <div class="bg-slate-100 rounded-[2rem] animate-pulse"></div>
-                <div class="bg-slate-100 rounded-[2rem] animate-pulse md:col-span-2"></div>
-            </div>
-
-            <div class="mt-10 text-center md:hidden">
-                <button id="view-all-gallery-btn-mobile" class="w-full bg-slate-900 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:bg-teal-600 transition-colors">
-                    Explore Full Gallery
-                </button>
+            <div id="gallery-preview-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-64 md:h-80">
+                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full"></div>
+                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full hidden md:block"></div>
+                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full hidden md:block"></div>
             </div>
         </div>
     </section>
@@ -681,12 +673,31 @@
         </div>
     </div>
 
-    <!-- Manual Gallery Lightbox Modal -->
-    <div id="lightbox-modal" class="hidden fixed inset-0 z-[300] bg-slate-900/95 flex items-center justify-center p-4 transition-opacity">
-        <button onclick="document.getElementById('lightbox-modal').classList.add('hidden')" class="absolute top-6 right-6 text-white hover:text-teal-400 transition-colors">
-            <span class="material-icons-round text-4xl">close</span>
-        </button>
-        <img id="lightbox-image" src="" alt="Clinic View Full" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl">
+    <!-- Advanced Steam-Style Slider Modal -->
+    <div id="advanced-gallery-modal" class="hidden fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-md flex flex-col transition-opacity opacity-0">
+        <div class="h-16 flex items-center justify-between px-6 shrink-0 absolute top-0 w-full z-10 bg-gradient-to-b from-slate-950/80 to-transparent">
+            <h3 class="text-white font-bold tracking-widest uppercase text-sm">Clinic Gallery</h3>
+            <button onclick="window.closeFullGallery()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500 text-white transition-colors">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        
+        <div class="flex-1 relative flex items-center justify-center p-4 md:p-12 overflow-hidden mt-12">
+            <button onclick="window.prevGalleryImage()" class="absolute left-4 md:left-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
+                <span class="material-icons-round">chevron_left</span>
+            </button>
+            
+            <img id="gallery-main-view" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
+            
+            <button onclick="window.nextGalleryImage()" class="absolute right-4 md:right-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
+                <span class="material-icons-round">chevron_right</span>
+            </button>
+        </div>
+        
+        <div class="h-32 bg-slate-950 border-t border-white/10 shrink-0 flex items-center px-4 overflow-x-auto hide-scrollbar snap-x pb-2">
+            <div id="gallery-thumbnails" class="flex gap-3 mx-auto h-20">
+            </div>
+        </div>
     </div>
 
     <div id="toast-container" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none"></div>
