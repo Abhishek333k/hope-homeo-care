@@ -186,17 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-const fetchBlogPosts = async () => {
+const fetchBlogPosts = () => {
     const blogContainer = document.getElementById('blogger-feed-container');
     if (!blogContainer) return;
-    
-    const feedUrl = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json&max-results=3';
-    
-    try {
-        const response = await fetch(feedUrl);
-        if (!response.ok) throw new Error("Feed unreachable");
-        
-        const data = await response.json();
+
+    // Define the global callback that Blogger will execute
+    window.handleBloggerFeed = (data) => {
         const posts = data.feed.entry || [];
         
         if (posts.length === 0) {
@@ -206,24 +201,20 @@ const fetchBlogPosts = async () => {
 
         let html = '';
         posts.forEach(post => {
-            // Safely extract data, falling back if nodes are missing
             const title = post.title ? post.title.$t : 'Untitled Update';
             
-            // Find the alternate link to the actual post
             let link = '#';
             if (post.link) {
                 const altLink = post.link.find(l => l.rel === 'alternate');
                 if (altLink) link = altLink.href;
             }
             
-            // Safely extract a snippet
             let rawSnippet = '';
             if (post.summary) rawSnippet = post.summary.$t;
             else if (post.content) rawSnippet = post.content.$t;
             
             const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
             
-            // Safely parse date
             const dateStr = post.published ? post.published.$t : new Date().toISOString();
             const date = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -242,10 +233,18 @@ const fetchBlogPosts = async () => {
         });
         
         blogContainer.innerHTML = html;
-    } catch (error) {
-        console.error("Health Journal Sync Error:", error);
+    };
+
+    // Inject the JSONP Script Tag
+    const script = document.createElement('script');
+    script.src = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
+    
+    script.onerror = () => {
+        console.error("Failed to load JSONP script");
         blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Currently syncing latest journal entries. Please visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-teal-600 font-bold hover:underline">our official blog</a> directly.</p></div>';
-    }
+    };
+    
+    document.body.appendChild(script);
 };
 
 async function loadGoogleReviews() {
