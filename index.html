@@ -327,28 +327,28 @@
 
 
     <!-- 3. Testimonial Scroller (Marquee) & Legal -->
-    <section id="testimonials" class="bg-slate-900 py-24 overflow-hidden relative border-y border-slate-800">
-        <div class="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style="background-image: radial-gradient(#14b8a6 1px, transparent 1px); background-size: 24px 24px;"></div>
+    <section id="testimonials" class="bg-slate-50 py-24 overflow-hidden relative border-y border-slate-200">
+        <div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#0f766e 1px, transparent 1px); background-size: 24px 24px;"></div>
         
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center relative z-10">
             <div class="flex justify-center items-center gap-3 mb-4">
-                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_light_color_92x30dp.png" alt="Google" class="h-6 object-contain opacity-80">
-                <span class="text-slate-400 font-medium">Verified Reviews</span>
+                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" class="h-6 object-contain">
+                <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Verified Reviews</span>
             </div>
-            <h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight">Patient Success Stories</h2>
+            <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Patient Success Stories</h2>
         </div>
 
         <div class="relative w-full overflow-hidden flex pb-8 group z-10">
-            <div class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-900 to-transparent z-20 pointer-events-none"></div>
-            <div class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-900 to-transparent z-20 pointer-events-none"></div>
+            <div class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-50 to-transparent z-20 pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-50 to-transparent z-20 pointer-events-none"></div>
             
             <div id="testimonials-grid" class="flex gap-6 pl-6 animate-marquee">
-                <div class="text-teal-500 animate-pulse w-full text-center">Syncing Google Reviews...</div>
+                <div class="text-teal-600 font-medium animate-pulse w-full text-center">Syncing Google Reviews...</div>
             </div>
         </div>
 
         <div class="text-center mt-6 relative z-10">
-            <button onclick="window.openReviewsModal()" class="bg-slate-800 border border-slate-700 hover:border-teal-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-lg">
+            <button onclick="window.openReviewsModal()" class="bg-white border-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-teal-600/30">
                 Read All Reviews
             </button>
         </div>
@@ -623,13 +623,13 @@
         </div>
     </div>
 
-    <div id="reviews-modal" class="hidden fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-md overflow-y-auto transition-opacity opacity-0">
-        <div class="sticky top-0 w-full bg-slate-950/90 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between z-20">
-            <div class="flex items-center gap-2">
-                <h3 class="text-white font-bold text-xl">Patient Reviews</h3>
-                <span class="px-2 py-0.5 bg-white/10 text-slate-300 text-[10px] font-bold rounded-full uppercase tracking-wider">Google Verified</span>
+    <div id="reviews-modal" class="hidden fixed inset-0 z-[500] bg-slate-100/95 backdrop-blur-md overflow-y-auto transition-opacity opacity-0">
+        <div class="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between z-20 shadow-sm">
+            <div class="flex items-center gap-3">
+                <h3 class="text-slate-900 font-bold text-xl">Patient Reviews</h3>
+                <span class="px-2.5 py-0.5 bg-teal-50 text-teal-700 border border-teal-100 text-[10px] font-bold rounded-full uppercase tracking-wider">Google Verified</span>
             </div>
-            <button onclick="window.closeReviewsModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500 text-white transition-colors">
+            <button onclick="window.closeReviewsModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-rose-500 hover:text-white text-slate-500 transition-colors">
                 <span class="material-icons-round">close</span>
             </button>
         </div>

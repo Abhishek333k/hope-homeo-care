@@ -282,25 +282,22 @@ async function loadGoogleReviews() {
             return `<div class="flex mb-3">${stars}</div>`;
         };
 
-        const createReviewCard = (review, isDark) => {
-            const bgClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-            const textClass = isDark ? 'text-slate-300' : 'text-slate-600';
-            const nameClass = isDark ? 'text-white' : 'text-slate-900';
-            // Fallback for users without Google profile photos
-            const photo = review.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=14b8a6&color=fff`;
+        const createReviewCard = (review) => {
+            // Teal background for auto-generated avatars to match logo
+            const photo = review.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=0f766e&color=fff`;
 
             return `
-                <div class="w-80 md:w-96 p-6 rounded-2xl border ${bgClass} shadow-lg shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1">
+                <div class="w-80 md:w-96 p-6 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 hover:shadow-xl hover:border-teal-200">
                     ${renderStars(review.rating || 5)}
-                    <p class="${textClass} text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
-                    <div class="flex items-center gap-3 mt-auto pt-4 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}">
-                        <img src="${photo}" alt="Patient" class="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-500/30">
+                    <p class="text-slate-600 text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
+                    <div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100">
+                        <img src="${photo}" alt="Patient" class="w-10 h-10 rounded-full object-cover shrink-0">
                         <div>
-                            <p class="font-bold text-sm ${nameClass} flex items-center gap-1">
+                            <p class="font-bold text-sm text-slate-900 flex items-center gap-1">
                                 ${review.author_name} 
-                                <span class="material-icons-round text-[14px] text-blue-400" title="Google Review">verified</span>
+                                <span class="material-icons-round text-[14px] text-teal-600" title="Google Review">verified</span>
                             </p>
-                            <p class="text-[10px] text-slate-500 uppercase tracking-widest">${review.relative_time_description}</p>
+                            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">${review.relative_time_description}</p>
                         </div>
                     </div>
                 </div>
@@ -308,11 +305,8 @@ async function loadGoogleReviews() {
         };
 
         let cardsHtml = '';
-        let modalHtml = '';
-        
         reviews.forEach(r => {
-            cardsHtml += createReviewCard(r, true);  // Dark mode for marquee
-            modalHtml += createReviewCard(r, false); // Light mode for modal
+            cardsHtml += createReviewCard(r); 
         });
 
         // Inject into Marquee (Duplicate for seamless loop)
@@ -322,7 +316,7 @@ async function loadGoogleReviews() {
         
         // Inject into Modal
         if (modalList) {
-            modalList.innerHTML = modalHtml;
+            modalList.innerHTML = cardsHtml;
         }
 
     } catch (error) {
