@@ -522,3 +522,82 @@ document.addEventListener('keydown', (e) => {
 });
 
 loadPublicGallery();
+
+// --- Patient Portal Login Engine ---
+const loginModal = document.getElementById('login-modal');
+const openPortalBtns = document.querySelectorAll('#nav-portal-btn, #mobile-portal-btn');
+const closeLoginBtn = document.getElementById('close-login-btn');
+
+if (loginModal && openPortalBtns.length > 0) {
+    const openLogin = () => {
+        loginModal.classList.remove('hidden');
+        setTimeout(() => {
+            loginModal.classList.remove('opacity-0');
+            loginModal.querySelector('div').classList.remove('scale-95');
+        }, 10);
+        
+        // Initialize ReCaptcha only once
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible'
+            });
+        }
+    };
+
+    const closeLogin = () => {
+        loginModal.classList.add('opacity-0');
+        loginModal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => loginModal.classList.add('hidden'), 300);
+    };
+
+    openPortalBtns.forEach(btn => btn.addEventListener('click', openLogin));
+    closeLoginBtn?.addEventListener('click', closeLogin);
+
+    // OTP Flow
+    const sendOtpBtn = document.getElementById('send-otp-btn');
+    const verifyOtpBtn = document.getElementById('verify-otp-btn');
+    const phoneInput = document.getElementById('login-phone');
+    const otpInput = document.getElementById('login-otp');
+    let confirmationResult = null;
+
+    sendOtpBtn?.addEventListener('click', async () => {
+        const phone = phoneInput.value.trim();
+        if (!/^\d{10}$/.test(phone)) return window.showToast("Enter a valid 10-digit number", "error");
+
+        sendOtpBtn.innerText = "Sending...";
+        sendOtpBtn.disabled = true;
+
+        try {
+            const formattedPhone = "+91" + phone;
+            confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+            document.getElementById('login-phone-step').classList.add('hidden');
+            document.getElementById('login-otp-step').classList.remove('hidden');
+            window.showToast("OTP sent to your phone");
+        } catch (error) {
+            console.error(error);
+            window.showToast("Rate limit exceeded or invalid number", "error");
+            sendOtpBtn.innerText = "Send OTP";
+            sendOtpBtn.disabled = false;
+        }
+    });
+
+    verifyOtpBtn?.addEventListener('click', async () => {
+        const otp = otpInput.value.trim();
+        if (otp.length !== 6) return window.showToast("Enter 6-digit OTP", "error");
+
+        verifyOtpBtn.innerText = "Verifying...";
+        verifyOtpBtn.disabled = true;
+
+        try {
+            await confirmationResult.confirm(otp);
+            window.showToast("Login successful!");
+            window.location.href = "patient-portal.html";
+        } catch (error) {
+            console.error(error);
+            window.showToast("Invalid OTP. Try again.", "error");
+            verifyOtpBtn.innerText = "Verify & Login";
+            verifyOtpBtn.disabled = false;
+        }
+    });
+}
+
