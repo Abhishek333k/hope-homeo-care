@@ -170,6 +170,25 @@ const loadAppointments = async () => {
             const isAddressed = apt.status === 'addressed';
             const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
             const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
+            
+            // Generate Google Calendar Link (Stateless)
+            let gcalBtn = '';
+            if (apt.date) {
+                // Convert YYYY-MM-DD to YYYYMMDD
+                const dateStr = apt.date.replace(/-/g, '');
+                // Create next day for an "all-day" event format
+                const nextDayDate = new Date(new Date(apt.date).getTime() + 86400000);
+                const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
+                
+                const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason: ${encodeURIComponent(apt.symptoms || 'General Checkup')}&location=Hope+Homeo+Care,+Mangalagiri`;
+                
+                gcalBtn = `
+                    <a href="${gcalUrl}" target="_blank" class="mt-4 md:mt-0 inline-flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium py-2 px-4 rounded-lg transition-colors text-sm shrink-0">
+                        <span class="material-icons-round text-[16px]">event</span> Add to Calendar
+                    </a>
+                `;
+            }
+
             html += `
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-teal-300 transition-colors cursor-default">
                     <div>
@@ -179,6 +198,7 @@ const loadAppointments = async () => {
                         </div>
                         <p class="text-sm text-slate-500 line-clamp-1">Reason: ${apt.symptoms || 'N/A'}</p>
                     </div>
+                    ${gcalBtn}
                 </div>
             `;
         });
