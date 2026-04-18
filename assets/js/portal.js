@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { collection, query, where, getDocs, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { auth, db } from './firebase-init.js';
 
 // Global State
@@ -36,7 +36,6 @@ const setupTabs = () => {
     const tabs = ['dashboard', 'records', 'profile'];
     tabs.forEach(tab => {
         document.getElementById(`tab-${tab}`)?.addEventListener('click', (e) => {
-            // Reset all buttons
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 if (btn) {
@@ -47,11 +46,9 @@ const setupTabs = () => {
                 document.getElementById(viewId)?.classList.add('hidden');
             });
             
-            // Activate clicked tab
             e.target.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
             e.target.classList.add('border-teal-600', 'text-teal-700', 'font-bold');
             
-            // Show view and load data
             if (tab === 'dashboard') {
                 document.getElementById('dashboard-view').classList.remove('hidden');
                 loadAppointments();
@@ -87,12 +84,14 @@ onAuthStateChanged(auth, async (user) => {
                     html += `
                         <button onclick="window.selectProfile('${p.name}', '${currentCleanPhone}')" class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
                             <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">${p.name.charAt(0).toUpperCase()}</div>
-                            <span class="font-semibold text-slate-700 truncate w-full">${p.name}</span>
+                            <span class="font-semibold text-slate-700 truncate w-full text-center leading-tight">${p.name}</span>
                         </button>
                     `;
                 });
                 container.innerHTML = html;
                 document.getElementById('profile-selector-view').classList.remove('hidden');
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('portal-nav').classList.add('hidden');
             }
         } catch (err) {
             console.error("Auth process error:", err);
@@ -119,34 +118,48 @@ window.selectProfile = (name, phone) => {
 const loadAppointments = async () => {
     const list = document.getElementById('patient-appointments-list');
     if (!list) return;
-    list.innerHTML = '<p class="text-slate-500 animate-pulse">Loading appointments...</p>';
+    list.innerHTML = '<p class="text-slate-500 animate-pulse">Syncing your schedule...</p>';
     
     try {
-        let aptQuery = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
-        if (currentPatientName) {
-            aptQuery = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone), where("name", "==", currentPatientName));
-        }
+        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+        const snapshot = await getDocs(q);
         
-        const snapshot = await getDocs(aptQuery);
-        if (snapshot.empty) {
-            list.innerHTML = `<div class="bg-white p-6 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">No appointments found.</p></div>`;
+        let appointments = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (currentPatientName) {
+                const dbName = (data.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const currName = currentPatientName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (dbName === currName) appointments.push({ id: doc.id, ...data });
+            } else {
+                appointments.push({ id: doc.id, ...data });
+            }
+        });
+
+        appointments.sort((a, b) => {
+            const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
+            const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
+            return timeB - timeA;
+        });
+
+        if (appointments.length === 0) {
+            list.innerHTML = `<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No past appointments found.</p></div>`;
             return;
         }
         
         let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const statusColor = data.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700';
-            const statusText = data.status === 'pending' ? 'Pending' : 'Confirmed';
+        appointments.forEach(apt => {
+            const isAddressed = apt.status === 'addressed';
+            const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
+            const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
             html += `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4 hover:border-teal-300 transition-colors">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-teal-300 transition-colors cursor-default">
                     <div>
-                        <p class="font-bold text-slate-800 text-lg">${data.date} <span class="text-sm font-normal text-slate-500 ml-2">| ${data.time || 'Time TBD'}</span></p>
-                        <p class="text-sm text-slate-600 mt-1 italic">"${data.symptoms}"</p>
-                    </div>
-                    <div class="shrink-0 flex items-center gap-3">
-                        ${!currentPatientName ? `<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-100 px-2 py-1 rounded">${data.name}</span>` : ''}
-                        <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${statusColor}">${statusText}</span>
+                        <div class="flex items-center gap-3 mb-1">
+                            <h4 class="font-bold text-slate-800">${apt.date}</h4>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColor}">${statusText}</span>
+                        </div>
+                        <p class="text-sm text-slate-500 line-clamp-1">Reason: ${apt.symptoms || 'N/A'}</p>
                     </div>
                 </div>
             `;
@@ -154,29 +167,68 @@ const loadAppointments = async () => {
         list.innerHTML = html;
     } catch (e) {
         console.error(e);
-        list.innerHTML = '<p class="text-rose-500">Error loading appointments.</p>';
+        list.innerHTML = '<p class="text-rose-500">Failed to sync data.</p>';
     }
 };
+
+window.openInternalBooking = () => {
+    document.getElementById('booking-for-name').innerText = currentPatientName || "You";
+    const modal = document.getElementById('internal-booking-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); }, 10);
+};
+
+window.closeInternalBooking = () => {
+    const modal = document.getElementById('internal-booking-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('int-book-submit');
+    btn.innerText = "Submitting..."; btn.disabled = true;
+    
+    try {
+        await addDoc(collection(db, "appointments"), {
+            name: currentPatientName || "Unknown",
+            phone: currentCleanPhone,
+            date: document.getElementById('int-book-date').value,
+            symptoms: document.getElementById('int-book-symptoms').value,
+            consent: true,
+            status: "pending",
+            timestamp: serverTimestamp()
+        });
+        
+        window.showToast("Appointment requested successfully!");
+        window.closeInternalBooking();
+        document.getElementById('internal-booking-form').reset();
+        loadAppointments();
+    } catch(err) {
+        console.error(err);
+        window.showToast("Failed to book appointment.", "error");
+    } finally {
+        btn.innerText = "Submit Request"; btn.disabled = false;
+    }
+});
 
 const loadMedicalRecords = async () => {
     const list = document.getElementById('records-list');
     if (!list) return;
-    
     if (!currentCompositeId) {
         list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No medical records found. The clinic will update this after your visit.</p></div>';
         return;
     }
-    
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
     try {
         const q = query(collection(db, "patients", currentCompositeId, "logs"), orderBy("timestamp", "desc"));
         const snapshot = await getDocs(q);
-        
         if (snapshot.empty) {
             list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No prescriptions or records on file yet.</p></div>';
             return;
         }
-        
         let html = '';
         snapshot.forEach(doc => {
             const log = doc.data();
@@ -200,33 +252,20 @@ const loadMedicalRecords = async () => {
 const loadProfileDetails = async () => {
     const container = document.getElementById('profile-details');
     if (!container || !currentCompositeId) return;
-    
     try {
         const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
         if (docSnap.exists()) {
             const p = docSnap.data();
             container.innerHTML = `
-                <div class="grid grid-cols-2 gap-8">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name</p>
-                        <p class="font-semibold text-slate-800 text-lg">${p.name}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Number</p>
-                        <p class="font-semibold text-slate-800 text-lg">+91 ${p.phone}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Age / Gender</p>
-                        <p class="font-semibold text-slate-800 text-lg">${p.age || '--'} / ${p.gender || '--'}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Blood Group</p>
-                        <p class="font-semibold text-slate-800 text-lg">${p.bloodGroup || 'Not specified'}</p>
-                    </div>
-                    <div class="col-span-2 p-4 bg-rose-50 rounded-xl border border-rose-100">
-                        <p class="text-xs font-bold text-rose-400 uppercase tracking-wider mb-1">Known Allergies</p>
-                        <p class="font-bold text-rose-600">${p.allergies || 'None reported'}</p>
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Full Name</p><p class="font-bold text-slate-800 text-lg">${p.name}</p></div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Registered Phone</p><p class="font-bold text-slate-800 text-lg">+91 ${p.phone}</p></div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Age / Gender</p><p class="font-bold text-slate-800 text-lg">${p.age || '--'} / ${p.gender || '--'}</p></div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Blood Group</p><p class="font-bold text-rose-500 text-lg">${p.bloodGroup || 'Not specified'}</p></div>
+                </div>
+                <div class="bg-teal-50 border border-teal-100 rounded-xl p-4 flex gap-3 text-teal-800 text-sm">
+                    <span class="material-icons-round">info</span>
+                    <p><strong>Medical Record Integrity:</strong> To ensure clinical safety, core medical identifiers and contact numbers cannot be edited online. Please contact the clinic directly to request updates to your profile.</p>
                 </div>
             `;
         }
