@@ -265,7 +265,62 @@
         </div>
     </section>
 
-    <!-- 1. Clinic Statistics Section -->
+    <!--1. About Us Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <!-- Left: Image Placeholder -->
+                <div class="lg:w-1/2 w-full">
+                    <div class="relative w-full max-w-lg mx-auto aspect-square group">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-tr from-teal-400 to-teal-700 rounded-[2rem] md:rounded-[3rem] rotate-3 opacity-70 group-hover:rotate-6 transition-transform duration-500">
+                        </div>
+
+                        <div
+                            class="absolute inset-0 bg-white rounded-[2rem] md:rounded-[3rem] p-2 shadow-2xl overflow-hidden">
+                            <img id="dynamic-hero-image" src="assets/images/hero-dr-joshua.webp" alt="Dr. Joshua"
+                                class="w-full h-full object-cover rounded-[1.5rem] md:rounded-[2.5rem]">
+                        </div>
+                    </div>
+                </div>
+                <!-- Right: Bio -->
+                <div class="lg:w-1/2 w-full flex flex-col justify-center">
+                    <div
+                        class="inline-block px-4 py-1.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-sm mb-6 w-max">
+                        Dr. K. Nikhil Joshua
+                    </div>
+                    <h2 class="text-teal-900 text-3xl font-bold mb-4">Healing the Mind & Body</h2>
+                    <h3 class="text-xl md:text-2xl text-teal-700 font-bold mb-6 flex items-center flex-wrap gap-2">
+                        B.H.M.S, M.A
+                        (Counselling Psychology)
+                    </h3>
+                    <div class="space-y-4 text-gray-600 text-lg leading-relaxed mb-8">
+                        <p>
+                            Experience a revolutionary approach to holistic healing. Dr. Joshua combines the profound
+                            physiological treatments of standard Homeopathy with advanced therapeutic insights from
+                            Counselling Psychology.
+                        </p>
+                        <p>
+                            This unique dual-qualification allows him to treat the root cause by addressing both
+                            physical symptoms and mental triggers, ensuring long-lasting, complete wellness for the
+                            patient.
+                        </p>
+                    </div>
+                    <a href="#services"
+                        class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors w-max group">
+                        Explore Our Treatments
+                        <svg aria-hidden="true" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Clinic Statistics Section -->
     <section class="bg-white py-16 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-200 text-center gap-y-8 md:gap-y-0">
@@ -354,82 +409,6 @@
         </div>
     </section>
 
-
-
-    <!-- 3. Testimonial Scroller (Marquee) & Legal -->
-    <section id="testimonials" class="bg-slate-50 py-24 overflow-hidden relative border-y border-slate-200">
-        <div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
-            style="background-image: radial-gradient(#0f766e 1px, transparent 1px); background-size: 24px 24px;"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center relative z-10">
-            <div class="flex justify-center items-center gap-3 mb-4">
-                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
-                    alt="Google" class="h-6 object-contain">
-                <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Verified Reviews</span>
-            </div>
-            <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Patient Success Stories</h2>
-        </div>
-
-        <div class="relative w-full overflow-hidden flex pb-8 group z-10">
-            <div
-                class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-50 to-transparent z-20 pointer-events-none">
-            </div>
-            <div
-                class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-50 to-transparent z-20 pointer-events-none">
-            </div>
-
-            <div id="testimonials-grid" class="flex gap-6 pl-6 animate-marquee">
-                <div class="text-teal-600 font-medium animate-pulse w-full text-center">Syncing Google Reviews...</div>
-            </div>
-        </div>
-
-        <div class="text-center mt-6 relative z-10">
-            <button onclick="window.openReviewsModal()"
-                class="bg-white border-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-teal-600/30">
-                Read All Reviews
-            </button>
-        </div>
-    </section>
-
-    <!-- Premium "Bento Grid" Clinic Gallery -->
-    <section id="gallery" class="py-20 bg-white relative overflow-hidden border-t border-slate-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-
-            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
-                <div>
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="material-icons-round text-teal-600 bg-teal-50 p-2 rounded-full">collections</span>
-                        <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Clinic Gallery</span>
-                    </div>
-                    <!-- <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2> -->
-                </div>
-
-                <button onclick="window.openFullGallery(0)"
-                    class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
-                    View Full Gallery <span class="material-icons-round text-[18px]">photo_library</span>
-                </button>
-            </div>
-
-            <div id="gallery-preview-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-64 md:h-80">
-
-                <div
-                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full flex items-center justify-center animate-pulse shadow-sm">
-                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
-                </div>
-
-                <div
-                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
-                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
-                </div>
-
-                <div
-                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
-                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
-                </div>
-
-            </div>
-        </div>
-    </section>
     <!-- Health Journal Section (Blogger Headless CMS) -->
     <section class="py-20 bg-slate-50 border-t border-slate-100" id="blogs">
         <div class="max-w-6xl mx-auto px-6">
@@ -491,60 +470,82 @@
         </div>
     </section>
 
-    <!-- About Us Section -->
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col lg:flex-row items-center gap-16">
-                <!-- Left: Image Placeholder -->
-                <div class="lg:w-1/2 w-full">
-                    <div class="relative w-full max-w-lg mx-auto aspect-square group">
-                        <div
-                            class="absolute inset-0 bg-gradient-to-tr from-teal-400 to-teal-700 rounded-[2rem] md:rounded-[3rem] rotate-3 opacity-70 group-hover:rotate-6 transition-transform duration-500">
-                        </div>
+    <!-- Premium "Bento Grid" Clinic Gallery -->
+    <section id="gallery" class="py-20 bg-white relative overflow-hidden border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-                        <div
-                            class="absolute inset-0 bg-white rounded-[2rem] md:rounded-[3rem] p-2 shadow-2xl overflow-hidden">
-                            <img id="dynamic-hero-image" src="assets/images/hero-dr-joshua.webp" alt="Dr. Joshua"
-                                class="w-full h-full object-cover rounded-[1.5rem] md:rounded-[2.5rem]">
-                        </div>
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="material-icons-round text-teal-600 bg-teal-50 p-2 rounded-full">collections</span>
+                        <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Clinic Gallery</span>
                     </div>
+                    <!-- <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2> -->
                 </div>
-                <!-- Right: Bio -->
-                <div class="lg:w-1/2 w-full flex flex-col justify-center">
-                    <div
-                        class="inline-block px-4 py-1.5 rounded-full bg-teal-50 text-teal-700 font-semibold text-sm mb-6 w-max">
-                        Dr. K. Nikhil Joshua
-                    </div>
-                    <h2 class="text-teal-900 text-3xl font-bold mb-4">Healing the Mind & Body</h2>
-                    <h3 class="text-xl md:text-2xl text-teal-700 font-bold mb-6 flex items-center flex-wrap gap-2">
-                        B.H.M.S, M.A
-                        (Counselling Psychology)
-                    </h3>
-                    <div class="space-y-4 text-gray-600 text-lg leading-relaxed mb-8">
-                        <p>
-                            Experience a revolutionary approach to holistic healing. Dr. Joshua combines the profound
-                            physiological treatments of standard Homeopathy with advanced therapeutic insights from
-                            Counselling Psychology.
-                        </p>
-                        <p>
-                            This unique dual-qualification allows him to treat the root cause by addressing both
-                            physical symptoms and mental triggers, ensuring long-lasting, complete wellness for the
-                            patient.
-                        </p>
-                    </div>
-                    <a href="#services"
-                        class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors w-max group">
-                        Explore Our Treatments
-                        <svg aria-hidden="true" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-                        </svg>
-                    </a>
+
+                <button onclick="window.openFullGallery(0)"
+                    class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
+                    View Full Gallery <span class="material-icons-round text-[18px]">photo_library</span>
+                </button>
+            </div>
+
+            <div id="gallery-preview-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-64 md:h-80">
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
                 </div>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
+                </div>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
+                </div>
+
             </div>
         </div>
     </section>
+
+    <!-- . Testimonial Scroller (Marquee) & Legal -->
+    <section id="testimonials" class="bg-slate-50 py-24 overflow-hidden relative border-y border-slate-200">
+        <div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
+            style="background-image: radial-gradient(#0f766e 1px, transparent 1px); background-size: 24px 24px;"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center relative z-10">
+            <div class="flex justify-center items-center gap-3 mb-4">
+                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
+                    alt="Google" class="h-6 object-contain">
+                <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Verified Reviews</span>
+            </div>
+            <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Patient Success Stories</h2>
+        </div>
+
+        <div class="relative w-full overflow-hidden flex pb-8 group z-10">
+            <div
+                class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-50 to-transparent z-20 pointer-events-none">
+            </div>
+            <div
+                class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-50 to-transparent z-20 pointer-events-none">
+            </div>
+
+            <div id="testimonials-grid" class="flex gap-6 pl-6 animate-marquee">
+                <div class="text-teal-600 font-medium animate-pulse w-full text-center">Syncing Google Reviews...</div>
+            </div>
+        </div>
+
+        <div class="text-center mt-6 relative z-10">
+            <button onclick="window.openReviewsModal()"
+                class="bg-white border-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-teal-600/30">
+                Read All Reviews
+            </button>
+        </div>
+    </section>
+
+
 
     <!-- Dedicated Contact & Location Section -->
     <section id="contact" class="py-20 bg-teal-50 border-t border-teal-100">
