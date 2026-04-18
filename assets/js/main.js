@@ -14,7 +14,8 @@ window.showToast = (message, type = 'success') => {
     
     toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
     toast.innerHTML = `<span class="material-icons-round text-[20px]">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
-    
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
     container.appendChild(toast);
     
     // Animate In
@@ -554,6 +555,17 @@ const loginModal = document.getElementById('login-modal');
 const openPortalBtns = document.querySelectorAll('#nav-portal-btn, #mobile-portal-btn');
 const closeLoginBtn = document.getElementById('close-login-btn');
 
+let isUserLoggedIn = false;
+onAuthStateChanged(auth, (user) => {
+    isUserLoggedIn = !!user;
+    // Change button text if logged in to provide UX feedback
+    openPortalBtns.forEach(btn => {
+        if (isUserLoggedIn && btn.tagName !== 'A') {
+            btn.innerHTML = `<span class="material-icons-round text-[18px]">account_circle</span> Go to Portal`;
+        }
+    });
+});
+
 if (loginModal && openPortalBtns.length > 0) {
     const openLogin = () => {
         loginModal.classList.remove('hidden');
@@ -561,7 +573,7 @@ if (loginModal && openPortalBtns.length > 0) {
             loginModal.classList.remove('opacity-0');
             loginModal.querySelector('div').classList.remove('scale-95');
         }, 10);
-        
+
         // Initialize ReCaptcha only once
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
@@ -576,7 +588,14 @@ if (loginModal && openPortalBtns.length > 0) {
         setTimeout(() => loginModal.classList.add('hidden'), 300);
     };
 
-    openPortalBtns.forEach(btn => btn.addEventListener('click', openLogin));
+    openPortalBtns.forEach(btn => btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (isUserLoggedIn) {
+            window.location.href = "patient-portal.html"; // Bypass OTP
+        } else {
+            openLogin();
+        }
+    }));
     closeLoginBtn?.addEventListener('click', closeLogin);
 
     // Global Escape Handler for Login Modal
@@ -594,7 +613,14 @@ if (loginModal && openPortalBtns.length > 0) {
     const verifyOtpBtn = document.getElementById('verify-otp-btn');
     const phoneInput = document.getElementById('login-phone');
     const otpInput = document.getElementById('login-otp');
+    const backToPhoneBtn = document.getElementById('login-back-btn');
     let confirmationResult = null;
+
+    backToPhoneBtn?.addEventListener('click', () => {
+        document.getElementById('login-otp-step').classList.add('hidden');
+        document.getElementById('login-phone-step').classList.remove('hidden');
+        otpInput.value = ''; // Clear OTP field
+    });
 
     sendOtpBtn?.addEventListener('click', async () => {
         const phone = phoneInput.value.trim();

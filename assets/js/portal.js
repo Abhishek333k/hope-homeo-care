@@ -23,6 +23,8 @@ window.showToast = (message, type = 'success') => {
     const icon = type === 'error' ? 'error' : 'check_circle';
     toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
     toast.innerHTML = `<span class="material-icons-round text-[20px]">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
     setTimeout(() => {
@@ -311,9 +313,11 @@ const loadProfileDetails = async () => {
 
 const logoutBtn = document.getElementById('logout-btn');
 logoutBtn?.addEventListener('click', () => {
-    logoutBtn.innerText = "Logging out...";
-    logoutBtn.disabled = true;
-    signOut(auth);
+    if (confirm("Are you sure you want to log out of the Patient Portal?")) {
+        logoutBtn.innerText = "Logging out...";
+        logoutBtn.disabled = true;
+        signOut(auth);
+    }
 });
 
 // Accessibility Hotkeys
