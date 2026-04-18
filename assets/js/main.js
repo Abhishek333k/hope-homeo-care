@@ -432,33 +432,57 @@ loadGoogleReviews();
 loadActiveCampaign();
 
 const loadPublicGallery = async () => {
-    const carousel = document.getElementById('gallery-carousel');
-    if (!carousel) return;
+    const grid = document.getElementById('gallery-bento-grid');
+    if (!grid) return;
 
     try {
         const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-            carousel.innerHTML = '<div class="w-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
+            grid.innerHTML = '<div class="col-span-full w-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
             return;
         }
 
         let html = '';
+        let index = 0;
+        
+        // The Apple-style Bento spanning pattern
+        const bentoPattern = [
+            'md:col-span-2 md:row-span-2', // Big Hero Square
+            'md:col-span-1 md:row-span-1', // Standard
+            'md:col-span-1 md:row-span-1', // Standard
+            'md:col-span-2 md:row-span-1', // Wide Rectangle
+            'md:col-span-1 md:row-span-2', // Tall Rectangle
+            'md:col-span-1 md:row-span-1', // Standard
+            'md:col-span-2 md:row-span-1', // Wide Rectangle
+        ];
+
         snapshot.forEach(doc => {
+            // Limit to max 7 items for the preview grid so it doesn't break the layout
+            if (index >= 7) return; 
+            
             const img = doc.data().imageUrl;
+            const spanClass = bentoPattern[index % bentoPattern.length]; // Apply the pattern
+            
             html += `
-                <div class="gallery-item shrink-0 w-64 md:w-80 h-64 md:h-80 rounded-3xl overflow-hidden shadow-sm cursor-pointer relative group">
-                    <img src="${img}" alt="Clinic Image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-teal-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span class="material-icons-round text-white text-3xl drop-shadow-md">zoom_in</span>
+                <div class="gallery-item ${spanClass} rounded-[2rem] overflow-hidden shadow-sm relative group cursor-pointer bg-slate-100">
+                    <img src="${img}" alt="Clinic Image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                        <div class="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-2 text-white font-bold">
+                            <span class="bg-white/20 backdrop-blur-md p-2 rounded-full flex items-center justify-center">
+                                <span class="material-icons-round text-[18px]">zoom_in</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             `;
+            index++;
         });
-        carousel.innerHTML = html;
+        
+        grid.innerHTML = html;
 
-        // Re-attach lightbox listener directly to the new images
+        // Safely attach Lightbox listener to the new Bento grid
         document.querySelectorAll('.gallery-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const imgNode = e.currentTarget.querySelector('img');
@@ -468,27 +492,10 @@ const loadPublicGallery = async () => {
                 }
             });
         });
-        
-        // Restore Smooth Marquee Auto-Scroll
-        let isHovered = false;
-        carousel.addEventListener('mouseenter', () => isHovered = true);
-        carousel.addEventListener('mouseleave', () => isHovered = false);
-        carousel.addEventListener('touchstart', () => isHovered = true);
-        carousel.addEventListener('touchend', () => { setTimeout(() => isHovered = false, 2000); });
-        
-        setInterval(() => {
-            if (!isHovered && carousel.scrollWidth > carousel.clientWidth) {
-                if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 1)) {
-                    carousel.scrollLeft = 0; 
-                } else {
-                    carousel.scrollLeft += 1;
-                }
-            }
-        }, 30);
 
     } catch (error) {
         console.error("Gallery fetch error:", error);
-        carousel.innerHTML = '<div class="w-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
+        grid.innerHTML = '<div class="col-span-full w-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
     }
 };
 

@@ -337,20 +337,30 @@
         </div>
     </section>
 
-    <!-- Clinic Gallery Section -->
-    <section id="gallery" class="py-20 bg-slate-50 relative overflow-hidden text-center">
+    <!-- Premium "Bento Grid" Clinic Gallery -->
+    <section id="gallery" class="py-24 bg-white relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <h2 class="text-3xl md:text-4xl font-bold text-teal-900 mb-12">Clinic Gallery</h2>
-
-            <div id="gallery-carousel"
-                class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 md:gap-6 pb-8 px-4 scroll-smooth">
-                <div class="w-full text-center text-slate-500 animate-pulse py-12">Loading gallery...</div>
+            
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2>
+                    <p class="text-lg text-slate-500 mt-4 max-w-xl">Experience our state-of-the-art healing environment, designed specifically for your comfort and recovery.</p>
+                </div>
+                <button id="view-all-gallery-btn-desktop" class="hidden md:inline-flex items-center gap-2 bg-slate-900 text-white font-bold py-3.5 px-8 rounded-full hover:bg-teal-600 transition-colors shadow-xl hover:shadow-teal-500/30">
+                    Explore Full Gallery <span class="material-icons-round text-sm">arrow_forward</span>
+                </button>
             </div>
 
-            <div class="mt-4 text-center">
-                <button id="view-all-gallery-btn"
-                    class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors shadow-sm">
-                    View Full Gallery
+            <div id="gallery-bento-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[180px] md:auto-rows-[280px]">
+                <div class="bg-slate-100 rounded-[2rem] animate-pulse md:col-span-2 md:row-span-2"></div>
+                <div class="bg-slate-100 rounded-[2rem] animate-pulse"></div>
+                <div class="bg-slate-100 rounded-[2rem] animate-pulse"></div>
+                <div class="bg-slate-100 rounded-[2rem] animate-pulse md:col-span-2"></div>
+            </div>
+
+            <div class="mt-10 text-center md:hidden">
+                <button id="view-all-gallery-btn-mobile" class="w-full bg-slate-900 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:bg-teal-600 transition-colors">
+                    Explore Full Gallery
                 </button>
             </div>
         </div>
