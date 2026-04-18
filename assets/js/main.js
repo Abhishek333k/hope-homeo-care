@@ -260,88 +260,94 @@ const fetchBlogPosts = () => {
     document.body.appendChild(script);
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Static Review Data (Can be linked to Firebase later)
-    const reviewsData = [
-        { name: "Sarah Jenkins", text: "Dr. Joshua took the time to understand my entire health history. Within weeks, my chronic migraines reduced significantly.", date: "March 2026" },
-        { name: "Michael R.", text: "I was skeptical about homeopathy at first, but the results speak for themselves. The online triage system was so easy to use.", date: "February 2026" },
-        { name: "Priya Patel", text: "Exceptional care and a very modern clinic. The personalized remedies worked wonders for my child's asthma.", date: "January 2026" },
-        { name: "David O.", text: "Finally, a doctor who actually listens! The digital prescription and medical timeline in the patient portal is incredibly convenient.", date: "December 2025" },
-        { name: "Emma Thompson", text: "The holistic approach changed my life. I feel more energetic and my digestive issues are completely gone.", date: "November 2025" }
-    ];
+async function loadGoogleReviews() {
+    const track = document.getElementById('testimonials-grid');
+    const modalList = document.getElementById('modal-reviews-list');
+    
+    try {
+        const response = await fetch('./assets/data/reviews.json');
+        if (!response.ok) throw new Error("JSON file not found.");
+        const reviews = await response.json();
 
-    const renderStars = () => {
-        return `<div class="flex text-amber-400 mb-3">
-            <span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span>
-        </div>`;
-    };
+        if (!reviews || reviews.length === 0) {
+            if(track) track.innerHTML = '<p class="text-slate-500">Awaiting review sync...</p>';
+            return;
+        }
 
-    const createReviewCard = (review, isDark) => {
-        const bgClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
-        const textClass = isDark ? 'text-slate-300' : 'text-slate-600';
-        const nameClass = isDark ? 'text-white' : 'text-slate-900';
-        
-        return `
-            <div class="w-80 md:w-96 p-6 rounded-2xl border ${bgClass} shadow-lg shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 mx-3">
-                ${renderStars()}
-                <p class="${textClass} text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
-                <div class="flex items-center gap-3 mt-auto pt-4 border-t border-white/10">
-                    <div class="w-10 h-10 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-lg shrink-0">
-                        ${review.name.charAt(0)}
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm ${nameClass} flex items-center gap-1">
-                            ${review.name} <span class="material-icons-round text-[14px] text-teal-500" title="Verified Patient">verified</span>
-                        </p>
-                        <p class="text-[10px] text-slate-500 uppercase tracking-widest">${review.date}</p>
+        const renderStars = (rating) => {
+            let stars = '';
+            for(let i=0; i<5; i++) {
+                stars += `<span class="material-icons-round text-[18px] ${i < rating ? 'text-amber-400' : 'text-slate-600'}">star</span>`;
+            }
+            return `<div class="flex mb-3">${stars}</div>`;
+        };
+
+        const createReviewCard = (review, isDark) => {
+            const bgClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
+            const textClass = isDark ? 'text-slate-300' : 'text-slate-600';
+            const nameClass = isDark ? 'text-white' : 'text-slate-900';
+            // Fallback for users without Google profile photos
+            const photo = review.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=14b8a6&color=fff`;
+
+            return `
+                <div class="w-80 md:w-96 p-6 rounded-2xl border ${bgClass} shadow-lg shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1">
+                    ${renderStars(review.rating || 5)}
+                    <p class="${textClass} text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
+                    <div class="flex items-center gap-3 mt-auto pt-4 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}">
+                        <img src="${photo}" alt="Patient" class="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-500/30">
+                        <div>
+                            <p class="font-bold text-sm ${nameClass} flex items-center gap-1">
+                                ${review.author_name} 
+                                <span class="material-icons-round text-[14px] text-blue-400" title="Google Review">verified</span>
+                            </p>
+                            <p class="text-[10px] text-slate-500 uppercase tracking-widest">${review.relative_time_description}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    };
+            `;
+        };
 
-    // 1. Render the Marquee (Duplicated to create infinite seamless loop)
-    const track = document.getElementById('marquee-track');
-    if (track) {
         let cardsHtml = '';
-        reviewsData.forEach(r => cardsHtml += createReviewCard(r, true));
-        // We double the HTML inside the track so it can loop seamlessly
-        track.innerHTML = cardsHtml + cardsHtml; 
-    }
+        let modalHtml = '';
+        
+        reviews.forEach(r => {
+            cardsHtml += createReviewCard(r, true);  // Dark mode for marquee
+            modalHtml += createReviewCard(r, false); // Light mode for modal
+        });
 
-    // 2. Render the Modal Grid
-    const grid = document.getElementById('modal-reviews-grid');
-    if (grid) {
-        let gridHtml = '';
-        reviewsData.forEach(r => gridHtml += createReviewCard(r, false)); // Light cards for modal
-        grid.innerHTML = gridHtml;
+        // Inject into Marquee (Duplicate for seamless loop)
+        if (track) {
+            track.innerHTML = cardsHtml + cardsHtml;
+        }
+        
+        // Inject into Modal
+        if (modalList) {
+            modalList.innerHTML = modalHtml;
+        }
+
+    } catch (error) {
+        console.error("Google Reviews Sync Failed:", error);
+        if(track) track.innerHTML = '<p class="text-rose-500">Currently syncing live reviews...</p>';
     }
-});
+}
 
 // Modal Controllers
 window.openReviewsModal = () => {
     const modal = document.getElementById('reviews-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    if(modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; 
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
 };
-
 window.closeReviewsModal = () => {
     const modal = document.getElementById('reviews-modal');
-    if (!modal) return;
-    modal.classList.add('opacity-0');
-    document.body.style.overflow = ''; 
-    setTimeout(() => modal.classList.add('hidden'), 300);
-};
-
-// Escape key closes the reviews modal
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('reviews-modal');
-        if (modal && !modal.classList.contains('hidden')) window.closeReviewsModal();
+    if(modal) {
+        modal.classList.add('opacity-0');
+        document.body.style.overflow = ''; 
+        setTimeout(() => modal.classList.add('hidden'), 300);
     }
-});
+};
 
 async function loadActiveCampaign() {
     // UX Check: Don't show again if they already closed it this session
@@ -406,6 +412,7 @@ async function loadActiveCampaign() {
 
 // Call functions on load
 fetchBlogPosts();
+loadGoogleReviews();
 loadActiveCampaign();
 
 let globalGalleryData = [];
