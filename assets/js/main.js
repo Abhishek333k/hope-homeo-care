@@ -50,17 +50,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Calendar Validation (Blocked Dates from Firestore) ---
+    let blockedDates = [];
     const dateInput = document.getElementById('patient-date');
+    let fp = null; // Flatpickr Instance
+
+    const loadBlockedDates = async () => {
+        try {
+            const docSnap = await getDoc(doc(db, "settings", "calendar"));
+            if (docSnap.exists() && docSnap.data().blockedDates) {
+                blockedDates = docSnap.data().blockedDates; // Array of "YYYY-MM-DD"
+                
+                // If flatpickr is already initialized, update it
+                if (fp) {
+                    fp.set('disable', [
+                        function(date) { return (date.getDay() === 0); }, // Always disable Sundays
+                        ...blockedDates
+                    ]);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load calendar settings:", error);
+        }
+    };
+
     if (dateInput) {
-        flatpickr(dateInput, {
+        fp = flatpickr(dateInput, {
             minDate: "today",
             disable: [
-                function(date) { return (date.getDay() === 0); } // Disable Sundays
+                function(date) { return (date.getDay() === 0); } // Default: Disable Sundays
             ],
             dateFormat: "Y-m-d",
-            static: true, // MAGIC BULLET: Embeds the calendar into the layout flow
+            static: true, 
             disableMobile: "true" 
         });
+        
+        // Fetch real-time blocked dates from Firestore
+        loadBlockedDates();
     }
 
     const modal = document.getElementById('booking-modal');
