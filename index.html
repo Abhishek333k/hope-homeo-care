@@ -16,16 +16,34 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
     <style>
         @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(calc(-50% - 1rem)); } /* -50% because track is duplicated */
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(calc(-50% - 1rem));
+            }
+
+            /* -50% because track is duplicated */
         }
+
         .animate-marquee {
             animation: marquee 40s linear infinite;
             width: max-content;
         }
-        .animate-marquee:hover { animation-play-state: paused; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
@@ -113,12 +131,8 @@
     <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm w-full transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <div class="text-2xl font-bold text-teal-900 tracking-tight flex items-center gap-2">
-                <svg aria-hidden="true" class="w-8 h-8 text-teal-700" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                        clip-rule="evenodd"></path>
-                </svg>
-                Hope Homeo Care
+                <img src="./assets/images/Hope_Banner.webp" alt=" Hope Homeo Care"
+                    class="h-8 md:h-10 lg:h-12 w-auto object-contain transition-all duration-500">
             </div>
             <nav class="hidden md:flex space-x-8 items-center">
                 <a href="#home"
@@ -334,67 +348,136 @@
 
     <!-- 3. Testimonial Scroller (Marquee) & Legal -->
     <section id="testimonials" class="bg-slate-50 py-24 overflow-hidden relative border-y border-slate-200">
-        <div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#0f766e 1px, transparent 1px); background-size: 24px 24px;"></div>
-        
+        <div class="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
+            style="background-image: radial-gradient(#0f766e 1px, transparent 1px); background-size: 24px 24px;"></div>
+
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center relative z-10">
             <div class="flex justify-center items-center gap-3 mb-4">
-                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" class="h-6 object-contain">
+                <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
+                    alt="Google" class="h-6 object-contain">
                 <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Verified Reviews</span>
             </div>
             <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Patient Success Stories</h2>
         </div>
 
         <div class="relative w-full overflow-hidden flex pb-8 group z-10">
-            <div class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-50 to-transparent z-20 pointer-events-none"></div>
-            <div class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-50 to-transparent z-20 pointer-events-none"></div>
-            
+            <div
+                class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-50 to-transparent z-20 pointer-events-none">
+            </div>
+            <div
+                class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-50 to-transparent z-20 pointer-events-none">
+            </div>
+
             <div id="testimonials-grid" class="flex gap-6 pl-6 animate-marquee">
                 <div class="text-teal-600 font-medium animate-pulse w-full text-center">Syncing Google Reviews...</div>
             </div>
         </div>
 
         <div class="text-center mt-6 relative z-10">
-            <button onclick="window.openReviewsModal()" class="bg-white border-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-teal-600/30">
+            <button onclick="window.openReviewsModal()"
+                class="bg-white border-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white font-bold py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-teal-600/30">
                 Read All Reviews
             </button>
         </div>
     </section>
 
     <!-- Premium "Bento Grid" Clinic Gallery -->
-    <section id="gallery" class="py-20 bg-slate-50 relative overflow-hidden">
+    <section id="gallery" class="py-20 bg-white relative overflow-hidden border-t border-slate-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
             <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                 <div>
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Clinic Gallery</h2>
-                    <!-- <p class="text-slate-500 mt-3 max-w-xl">Experience our state-of-the-art healing environment.</p> -->
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="material-icons-round text-teal-600 bg-teal-50 p-2 rounded-full">collections</span>
+                        <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Clinic Gallery</span>
+                    </div>
+                    <!-- <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2> -->
                 </div>
+
                 <button onclick="window.openFullGallery(0)"
                     class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
-                    View Full Gallery <span class="material-icons-round text-sm">photo_library</span>
+                    View Full Gallery <span class="material-icons-round text-[18px]">photo_library</span>
                 </button>
             </div>
 
             <div id="gallery-preview-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-64 md:h-80">
-                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full"></div>
-                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full hidden md:block"></div>
-                <div class="bg-slate-200 animate-pulse rounded-2xl h-full w-full hidden md:block"></div>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
+                </div>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
+                </div>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl h-full w-full hidden md:flex items-center justify-center animate-pulse shadow-sm">
+                    <span class="material-icons-round text-slate-200 text-5xl">insert_photo</span>
+                </div>
+
             </div>
         </div>
     </section>
-
     <!-- Health Journal Section (Blogger Headless CMS) -->
-    <section class="py-20 bg-slate-50" id="blogs">
+    <section class="py-20 bg-slate-50 border-t border-slate-100" id="blogs">
         <div class="max-w-6xl mx-auto px-6">
+
             <div class="text-center mb-12">
-                <h2 class="text-4xl font-bold text-slate-800 mb-4">Health Journal</h2>
-                <p class="text-slate-500">Latest medical insights and clinic updates from Dr. Joshua.</p>
+                <div class="flex justify-center items-center gap-2 mb-3">
+                    <span
+                        class="material-icons-round text-teal-600 bg-teal-50 p-2 rounded-full">medical_information</span>
+                    <span class="text-teal-700 font-bold text-sm tracking-wide uppercase">Advice & Updates</span>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-800 mb-4">From the Doctor's Desk</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto">Practical homeopathy advice, health tips, and the latest
+                    news directly from Dr. K. Nikhil Joshua.</p>
             </div>
 
             <div id="blogger-feed-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-white rounded-3xl p-6 h-64 border border-slate-100 shadow-sm animate-pulse"></div>
-                <div class="bg-white rounded-3xl p-6 h-64 border border-slate-100 shadow-sm animate-pulse"></div>
-                <div class="bg-white rounded-3xl p-6 h-64 border border-slate-100 shadow-sm animate-pulse"></div>
+
+                <div class="bg-white rounded-2xl p-6 h-64 border border-slate-200 shadow-sm flex flex-col">
+                    <div class="w-24 h-6 bg-slate-100 animate-pulse rounded-full mb-4"></div>
+                    <div class="w-3/4 h-6 bg-slate-100 animate-pulse rounded mb-4"></div>
+                    <div class="space-y-2 mb-6">
+                        <div class="w-full h-3 bg-slate-50 animate-pulse rounded"></div>
+                        <div class="w-5/6 h-3 bg-slate-50 animate-pulse rounded"></div>
+                        <div class="w-4/6 h-3 bg-slate-50 animate-pulse rounded"></div>
+                    </div>
+                    <div class="w-24 h-4 bg-slate-100 animate-pulse rounded mt-auto"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 h-64 border border-slate-200 shadow-sm hidden md:flex flex-col">
+                    <div class="w-24 h-6 bg-slate-100 animate-pulse rounded-full mb-4"></div>
+                    <div class="w-3/4 h-6 bg-slate-100 animate-pulse rounded mb-4"></div>
+                    <div class="space-y-2 mb-6">
+                        <div class="w-full h-3 bg-slate-50 animate-pulse rounded"></div>
+                        <div class="w-5/6 h-3 bg-slate-50 animate-pulse rounded"></div>
+                    </div>
+                    <div class="w-24 h-4 bg-slate-100 animate-pulse rounded mt-auto"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 h-64 border border-slate-200 shadow-sm hidden md:flex flex-col">
+                    <div class="w-24 h-6 bg-slate-100 animate-pulse rounded-full mb-4"></div>
+                    <div class="w-3/4 h-6 bg-slate-100 animate-pulse rounded mb-4"></div>
+                    <div class="space-y-2 mb-6">
+                        <div class="w-full h-3 bg-slate-50 animate-pulse rounded"></div>
+                        <div class="w-5/6 h-3 bg-slate-50 animate-pulse rounded"></div>
+                        <div class="w-4/6 h-3 bg-slate-50 animate-pulse rounded"></div>
+                    </div>
+                    <div class="w-24 h-4 bg-slate-100 animate-pulse rounded mt-auto"></div>
+                </div>
+
             </div>
+
+            <div class="mt-10 text-center">
+                <a href="https://hopehomeocare.blogspot.com" target="_blank"
+                    class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors">
+                    Read all articles <span class="material-icons-round text-[18px]">arrow_forward</span>
+                </a>
+            </div>
+
         </div>
     </section>
 
@@ -629,13 +712,18 @@
         </div>
     </div>
 
-    <div id="reviews-modal" class="hidden fixed inset-0 z-[500] bg-slate-100/95 backdrop-blur-md overflow-y-auto transition-opacity opacity-0">
-        <div class="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between z-20 shadow-sm">
+    <div id="reviews-modal"
+        class="hidden fixed inset-0 z-[500] bg-slate-100/95 backdrop-blur-md overflow-y-auto transition-opacity opacity-0">
+        <div
+            class="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between z-20 shadow-sm">
             <div class="flex items-center gap-3">
                 <h3 class="text-slate-900 font-bold text-xl">Patient Reviews</h3>
-                <span class="px-2.5 py-0.5 bg-teal-50 text-teal-700 border border-teal-100 text-[10px] font-bold rounded-full uppercase tracking-wider">Google Verified</span>
+                <span
+                    class="px-2.5 py-0.5 bg-teal-50 text-teal-700 border border-teal-100 text-[10px] font-bold rounded-full uppercase tracking-wider">Google
+                    Verified</span>
             </div>
-            <button onclick="window.closeReviewsModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-rose-500 hover:text-white text-slate-500 transition-colors">
+            <button onclick="window.closeReviewsModal()"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-rose-500 hover:text-white text-slate-500 transition-colors">
                 <span class="material-icons-round">close</span>
             </button>
         </div>
