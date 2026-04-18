@@ -186,34 +186,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-async function loadBloggerFeed() {
+const fetchBlogPosts = async () => {
     const blogContainer = document.getElementById('blogger-feed-container');
     if (!blogContainer) return;
-
+    
     const feedUrl = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json&max-results=3';
     
     try {
         const response = await fetch(feedUrl);
-        if (!response.ok) throw new Error('Blog feed unavailable');
+        if (!response.ok) throw new Error("Feed unreachable");
         
         const data = await response.json();
-        const posts = data.feed.entry;
+        const posts = data.feed.entry || [];
         
-        if (!posts || posts.length === 0) {
-            blogContainer.innerHTML = '<p class="col-span-full text-center text-slate-500">No articles published yet.</p>';
+        if (posts.length === 0) {
+            blogContainer.innerHTML = '<p class="col-span-full text-center text-slate-500">No articles published yet. Check back soon!</p>';
             return;
         }
 
         let html = '';
         posts.forEach(post => {
-            const title = post.title.$t;
-            const alternateLink = post.link.find(l => l.rel === 'alternate');
-            const link = alternateLink ? alternateLink.href : '#';
+            // Safely extract data, falling back if nodes are missing
+            const title = post.title ? post.title.$t : 'Untitled Update';
             
-            // Extract a clean snippet (stripping HTML tags)
-            const rawSnippet = post.content ? post.content.$t : (post.summary ? post.summary.$t : '');
+            // Find the alternate link to the actual post
+            let link = '#';
+            if (post.link) {
+                const altLink = post.link.find(l => l.rel === 'alternate');
+                if (altLink) link = altLink.href;
+            }
+            
+            // Safely extract a snippet
+            let rawSnippet = '';
+            if (post.summary) rawSnippet = post.summary.$t;
+            else if (post.content) rawSnippet = post.content.$t;
+            
             const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
-            const date = new Date(post.published.$t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            // Safely parse date
+            const dateStr = post.published ? post.published.$t : new Date().toISOString();
+            const date = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             html += `
                 <a href="${link}" target="_blank" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group">
@@ -231,10 +243,10 @@ async function loadBloggerFeed() {
         
         blogContainer.innerHTML = html;
     } catch (error) {
-        console.error("Failed to load blog feed:", error);
-        blogContainer.innerHTML = '<p class="col-span-full text-center text-rose-500 py-12">Health journal entries coming soon.</p>';
+        console.error("Health Journal Sync Error:", error);
+        blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Currently syncing latest journal entries. Please visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-teal-600 font-bold hover:underline">our official blog</a> directly.</p></div>';
     }
-}
+};
 
 async function loadGoogleReviews() {
     const grid = document.getElementById('testimonials-grid');
@@ -403,7 +415,7 @@ async function loadActiveCampaign() {
 }
 
 // Call functions on load
-loadBloggerFeed();
+fetchBlogPosts();
 loadGoogleReviews();
 loadActiveCampaign();
 
