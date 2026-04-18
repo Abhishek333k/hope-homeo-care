@@ -243,13 +243,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchHeroImage = async () => {
         const heroImg = document.getElementById('dynamic-hero-image');
         if (!heroImg) return;
+        
+        // Set a default fallback image first
+        const fallbackSrc = "./assets/images/hero.jpeg"; 
+        
         try {
             const docSnap = await getDoc(doc(db, "settings", "branding"));
             if (docSnap.exists() && docSnap.data().heroImageUrl) {
                 heroImg.src = docSnap.data().heroImageUrl;
+            } else {
+                heroImg.src = fallbackSrc;
             }
         } catch (e) {
-            console.error("Failed to load dynamic hero image", e);
+            console.error("Failed to load dynamic hero image, using fallback.", e);
+            heroImg.src = fallbackSrc;
         }
     };
     fetchHeroImage();
