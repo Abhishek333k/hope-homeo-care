@@ -187,64 +187,52 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadBloggerFeed() {
-    const blogUrl = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json&max-results=3';
-    const grid = document.getElementById('blog-grid');
-    if (!grid) return;
+    const blogContainer = document.getElementById('blogger-feed-container');
+    if (!blogContainer) return;
 
-    grid.innerHTML = '<p class="text-center text-teal-700 font-semibold col-span-3">Loading latest articles...</p>';
-
+    const feedUrl = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json&max-results=3';
+    
     try {
-        const response = await fetch(blogUrl);
-        if (!response.ok) {
-            throw new Error('Blog feed unavailable');
-        }
+        const response = await fetch(feedUrl);
+        if (!response.ok) throw new Error('Blog feed unavailable');
+        
         const data = await response.json();
-
-        if (!data.feed || !data.feed.entry || data.feed.entry.length === 0) {
-            grid.innerHTML = '<p class="text-center text-slate-500 col-span-3">Unable to load latest articles at this time.</p>';
+        const posts = data.feed.entry;
+        
+        if (!posts || posts.length === 0) {
+            blogContainer.innerHTML = '<p class="col-span-full text-center text-slate-500">No articles published yet.</p>';
             return;
         }
 
-        const posts = data.feed.entry.map(entry => {
-            const title = entry.title.$t;
+        let html = '';
+        posts.forEach(post => {
+            const title = post.title.$t;
+            const alternateLink = post.link.find(l => l.rel === 'alternate');
+            const link = alternateLink ? alternateLink.href : '#';
             
-            let href = '#';
-            const alternateLink = entry.link.find(l => l.rel === 'alternate');
-            if (alternateLink) href = alternateLink.href;
+            // Extract a clean snippet (stripping HTML tags)
+            const rawSnippet = post.content ? post.content.$t : (post.summary ? post.summary.$t : '');
+            const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
+            const date = new Date(post.published.$t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            const publishedDate = new Date(entry.published.$t).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-            
-            const contentHtml = entry.content ? entry.content.$t : '';
-            const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
-            const imageSrc = imgMatch ? imgMatch[1] : './assets/images/blog-placeholder.webp';
-
-            return `
-                <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full group border border-slate-100">
-                    <div class="relative w-full h-56 overflow-hidden">
-                        <img src="${imageSrc}" alt="${title}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 bg-slate-100">
-                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur text-teal-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                            ${publishedDate}
-                        </div>
+            html += `
+                <a href="${link}" target="_blank" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group">
+                    <div class="mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-teal-600 bg-teal-50 px-3 py-1 rounded-full">${date}</span>
                     </div>
-                    <div class="p-6 flex flex-col flex-grow">
-                        <h3 class="font-bold text-lg text-slate-800 mb-4 line-clamp-2 leading-snug">${title}</h3>
-                        <div class="mt-auto pt-5 border-t border-slate-100">
-                            <a href="${href}" class="inline-flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-900 transition-colors" target="_blank" rel="noopener noreferrer">
-                                Read Article
-                                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                            </a>
-                        </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-teal-600 transition-colors">${title}</h3>
+                    <p class="text-slate-500 text-sm mb-6 flex-1">${cleanSnippet}</p>
+                    <div class="pt-4 border-t border-slate-100 mt-auto flex items-center text-teal-600 font-bold text-sm">
+                        Read Article <span class="material-icons-round text-lg ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </div>
-                </div>
+                </a>
             `;
         });
-
-        grid.innerHTML = posts.join('');
+        
+        blogContainer.innerHTML = html;
     } catch (error) {
-        console.warn("Blog module silenced: Blog is not yet public or configured.");
-        if (grid) {
-            grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">Health articles coming soon.</div>';
-        }
+        console.error("Failed to load blog feed:", error);
+        blogContainer.innerHTML = '<p class="col-span-full text-center text-rose-500 py-12">Health journal entries coming soon.</p>';
     }
 }
 
