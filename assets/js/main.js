@@ -431,37 +431,34 @@ fetchBlogPosts();
 loadGoogleReviews();
 loadActiveCampaign();
 
-async function loadDynamicGallery() {
+const loadPublicGallery = async () => {
     const carousel = document.getElementById('gallery-carousel');
     if (!carousel) return;
 
     try {
-        // Fetch live images from Firestore, ordered by their custom index
         const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-            carousel.innerHTML = '<div class="w-full text-center text-slate-500 py-12">Clinic gallery coming soon.</div>';
+            carousel.innerHTML = '<div class="w-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
             return;
         }
 
-        let galleryHTML = '';
+        let html = '';
         snapshot.forEach(doc => {
-            const img = doc.data();
-            galleryHTML += `
-                <div class="gallery-item shrink-0 snap-center relative aspect-square w-[70vw] md:w-[300px] rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
-                    <div class="absolute inset-0 bg-teal-900/0 group-hover:bg-teal-900/20 transition-colors duration-300 z-10 flex items-center justify-center">
-                        <span class="material-icons-round text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300 drop-shadow-md">zoom_out_map</span>
+            const img = doc.data().imageUrl;
+            html += `
+                <div class="gallery-item shrink-0 w-64 md:w-80 h-64 md:h-80 rounded-3xl overflow-hidden shadow-sm cursor-pointer relative group">
+                    <img src="${img}" alt="Clinic Image" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-teal-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span class="material-icons-round text-white text-3xl drop-shadow-md">zoom_in</span>
                     </div>
-                    <img src="${img.imageUrl}" alt="${img.title || 'Clinic View'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
                 </div>
             `;
         });
-        
-        carousel.innerHTML = galleryHTML;
+        carousel.innerHTML = html;
 
-        // Initialize Premium Lightbox
-        // Task 2: Ultra-resilient Manual Lightbox Listener
+        // Re-attach lightbox listener directly to the new images
         document.querySelectorAll('.gallery-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const imgNode = e.currentTarget.querySelector('img');
@@ -471,23 +468,14 @@ async function loadDynamicGallery() {
                 }
             });
         });
-
-        document.getElementById('view-all-gallery-btn')?.addEventListener('click', (e) => { 
-            e.preventDefault();
-            // Start the marquee if it wasn't already or just scroll
-            carousel.scrollLeft = 0;
-            window.showToast("Swipe to explore full gallery");
-        });
-
-        // Smooth Marquee Auto-Scroll
-        let scrollAmount = 0;
-        let isHovered = false;
         
+        // Restore Smooth Marquee Auto-Scroll
+        let isHovered = false;
         carousel.addEventListener('mouseenter', () => isHovered = true);
         carousel.addEventListener('mouseleave', () => isHovered = false);
         carousel.addEventListener('touchstart', () => isHovered = true);
         carousel.addEventListener('touchend', () => { setTimeout(() => isHovered = false, 2000); });
-
+        
         setInterval(() => {
             if (!isHovered && carousel.scrollWidth > carousel.clientWidth) {
                 if (carousel.scrollLeft >= (carousel.scrollWidth - carousel.clientWidth - 1)) {
@@ -499,13 +487,13 @@ async function loadDynamicGallery() {
         }, 30);
 
     } catch (error) {
-        console.error("Gallery load error:", error);
-        carousel.innerHTML = '<div class="w-full text-center text-slate-500 py-12">Unable to load gallery securely.</div>';
+        console.error("Gallery fetch error:", error);
+        carousel.innerHTML = '<div class="w-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
     }
-}
+};
 
 // Call it on load
-loadDynamicGallery();
+loadPublicGallery();
 
 let currentUser = null;
 const loginModal = document.getElementById('login-modal');
