@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { auth, db } from './firebase-init.js';
 
@@ -184,6 +184,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    const fetchHeroImage = async () => {
+        const heroImg = document.getElementById('dynamic-hero-image');
+        if (!heroImg) return;
+        try {
+            const docSnap = await getDoc(doc(db, "settings", "branding"));
+            if (docSnap.exists() && docSnap.data().heroImageUrl) {
+                heroImg.src = docSnap.data().heroImageUrl;
+            }
+        } catch (e) {
+            console.error("Failed to load dynamic hero image", e);
+        }
+    };
+    fetchHeroImage();
 });
 
 const fetchBlogPosts = () => {
@@ -455,7 +468,22 @@ async function loadDynamicGallery() {
             zoomable: true
         });
 
-        document.getElementById('view-all-gallery-btn')?.addEventListener('click', () => { lightbox.open(); });
+        // Hardened Click Listener to prevent 'wrong target' white-screen bug
+        document.querySelectorAll('.glightbox').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Ensure we don't naturally navigate or target the wrong inner icon
+                const targetHref = item.getAttribute('href');
+                if (!targetHref) {
+                    const img = item.querySelector('img');
+                    if (img) item.setAttribute('href', img.src);
+                }
+            });
+        });
+
+        document.getElementById('view-all-gallery-btn')?.addEventListener('click', (e) => { 
+            e.preventDefault();
+            lightbox.open(); 
+        });
 
         // Smooth Marquee Auto-Scroll
         let scrollAmount = 0;
