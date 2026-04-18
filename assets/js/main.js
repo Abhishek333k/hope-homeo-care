@@ -102,30 +102,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.getElementById('close-modal-btn');
     
     // Toggle Modal
-    const openModal = (e) => {
-        e.preventDefault();
+    window.openBookingModal = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         modal.classList.remove('hidden');
     };
 
-    const closeModal = () => {
+    window.closeBookingModal = () => {
         modal.classList.add('hidden');
     };
 
-    triggers.forEach(btn => btn.addEventListener('click', openModal));
+    triggers.forEach(btn => btn.addEventListener('click', window.openBookingModal));
     
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (closeBtn) closeBtn.addEventListener('click', window.closeBookingModal);
 
     // Close on overlay click
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            closeModal();
+            window.closeBookingModal();
         }
     });
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-            closeModal();
+            window.closeBookingModal();
         }
     });
 

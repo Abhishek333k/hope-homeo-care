@@ -14,7 +14,36 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
+    <meta name="title" content="Hope Homeo Care | Dr. K. Nikhil Joshua">
+    <meta name="description"
+        content="Expert homeopathic treatment in Mangalagiri. Specialized care for chronic diseases, skin conditions, respiratory issues, and holistic wellness.">
+    <meta name="keywords"
+        content="Homeopathy, Mangalagiri, Dr. Nikhil Joshua, Homeo clinic, best homeopathy doctor, chronic disease treatment">
+    <meta name="author" content="Hope Homeo Care">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://hopehomeocare.com/">
+    <meta property="og:title" content="Hope Homeo Care | Dr. K. Nikhil Joshua">
+    <meta property="og:description"
+        content="Expert homeopathic treatment in Mangalagiri. Book your consultation today.">
+    <meta property="og:image"
+        content="https://raw.githubusercontent.com/YOUR_GITHUB_NAME/hope-homeo-care/main/assets/images/clinic-exterior.jpg">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Hope Homeo Care | Dr. K. Nikhil Joshua">
+    <meta property="twitter:description"
+        content="Expert homeopathic treatment in Mangalagiri. Book your consultation today.">
+    <meta property="twitter:image"
+        content="https://raw.githubusercontent.com/YOUR_GITHUB_NAME/hope-homeo-care/main/assets/images/clinic-exterior.jpg">
+
     <style>
+        /* Global Accessibility Focus States */
+        *:focus-visible {
+            outline: 2px solid #0f766e;
+            /* Teal 700 */
+            outline-offset: 2px;
+        }
+
         @keyframes marquee {
             0% {
                 transform: translateX(0);
@@ -23,8 +52,6 @@
             100% {
                 transform: translateX(calc(-50% - 1rem));
             }
-
-            /* -50% because track is duplicated */
         }
 
         .animate-marquee {
@@ -43,6 +70,32 @@
         .hide-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            /* Optional fading edges */
+            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        }
+
+        .marquee-content {
+            display: inline-flex;
+            width: max-content;
+            animation: marquee 30s linear infinite;
+        }
+
+        .marquee-content:hover {
+            animation-play-state: paused;
+        }
+
+        .testimonial-card {
+            white-space: normal;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -77,20 +130,6 @@
             }
         }
     </script>
-    <style>
-        .marquee-container {
-            overflow: hidden;
-            white-space: nowrap;
-            /* Optional fading edges */
-            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-        }
-
-        .marquee-content {
-            display: inline-flex;
-            width: max-content;
-            animation: marquee 30s linear infinite;
-        }
 
         .marquee-content:hover {
             animation-play-state: paused;
@@ -178,7 +217,7 @@
                         class="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-700 font-bold py-3 rounded-xl border border-slate-200">
                         <span class="material-icons-round text-[18px]">account_circle</span> Patient Portal
                     </button>
-                    <a href="#"
+                    <a href="javascript:void(0)" onclick="window.openBookingModal()"
                         class="block w-full text-center bg-teal-700 text-white font-bold py-3 rounded-xl mt-3 shadow-lg shadow-teal-700/20">
                         Book Appointment
                     </a>
@@ -632,9 +671,9 @@
                 <div>
                     <h3 class="text-white text-lg font-bold mb-4">Legal</h3>
                     <ul class="space-y-2 text-sm flex flex-col">
-                        <li><a href="terms.html" class="hover:text-white transition-colors">Terms of Service</a></li>
-                        <li><a href="privacy.html" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                        <li><a href="consent.html" class="hover:text-white transition-colors">Informed Consent</a></li>
+                        <li><a href="javascript:void(0)" onclick="alert('Legal documents are currently being drafted and will be available soon.')" class="hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a href="javascript:void(0)" onclick="alert('Legal documents are currently being drafted and will be available soon.')" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="javascript:void(0)" onclick="alert('Legal documents are currently being drafted and will be available soon.')" class="hover:text-white transition-colors">Informed Consent</a></li>
                     </ul>
                 </div>
             </div>

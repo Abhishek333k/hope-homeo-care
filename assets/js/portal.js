@@ -202,6 +202,22 @@ window.closeInternalBooking = () => {
     setTimeout(() => modal.classList.add('hidden'), 300);
 };
 
+// Initialize Flatpickr for Internal Booking
+document.addEventListener('DOMContentLoaded', () => {
+    const intDateInput = document.getElementById('int-book-date');
+    if (intDateInput) {
+        flatpickr(intDateInput, {
+            minDate: "today",
+            disable: [
+                function(date) { return (date.getDay() === 0); } // Disable Sundays
+            ],
+            dateFormat: "Y-m-d",
+            static: true,
+            disableMobile: "true"
+        });
+    }
+});
+
 document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('int-book-submit');
