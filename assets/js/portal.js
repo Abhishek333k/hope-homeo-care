@@ -54,7 +54,7 @@ const setupTabs = () => {
                 loadAppointments();
             } else if (tab === 'records') {
                 document.getElementById('view-records').classList.remove('hidden');
-                loadMedicalRecords();
+                loadMedicalRecords(); // Task 3: Force refresh every click
             } else if (tab === 'profile') {
                 document.getElementById('view-profile').classList.remove('hidden');
                 loadProfileDetails();
@@ -111,9 +111,25 @@ window.selectProfile = (name, phone) => {
     document.getElementById('portal-nav').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
     
+    // Task 1: Unhide Switch Profile button
+    document.getElementById('switch-profile-btn')?.classList.remove('hidden');
+
     setupTabs();
     loadAppointments();
 };
+
+// Task 1: Switch Profile Event Listener
+document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
+    // Hide all main views
+    ['portal-nav', 'dashboard-view', 'view-records', 'view-profile'].forEach(id => {
+        document.getElementById(id)?.classList.add('hidden');
+    });
+    
+    // Reset selection and show selector
+    currentCompositeId = null;
+    currentPatientName = null;
+    document.getElementById('profile-selector-view').classList.remove('hidden');
+});
 
 const loadAppointments = async () => {
     const list = document.getElementById('patient-appointments-list');

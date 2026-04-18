@@ -449,40 +449,34 @@ async function loadDynamicGallery() {
         snapshot.forEach(doc => {
             const img = doc.data();
             galleryHTML += `
-                <a href="${img.imageUrl}" class="glightbox shrink-0 snap-center relative aspect-square w-[70vw] md:w-[300px] rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60" data-gallery="clinic-gallery" data-title="${img.title || ''}">
+                <div class="gallery-item shrink-0 snap-center relative aspect-square w-[70vw] md:w-[300px] rounded-2xl overflow-hidden shadow-sm group cursor-pointer bg-white/40 backdrop-blur-md border border-white/60">
                     <div class="absolute inset-0 bg-teal-900/0 group-hover:bg-teal-900/20 transition-colors duration-300 z-10 flex items-center justify-center">
                         <span class="material-icons-round text-white opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300 drop-shadow-md">zoom_out_map</span>
                     </div>
                     <img src="${img.imageUrl}" alt="${img.title || 'Clinic View'}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy">
-                </a>
+                </div>
             `;
         });
         
         carousel.innerHTML = galleryHTML;
 
         // Initialize Premium Lightbox
-        const lightbox = GLightbox({
-            selector: '.glightbox',
-            touchNavigation: true,
-            loop: true,
-            zoomable: true
-        });
-
-        // Hardened Click Listener to prevent 'wrong target' white-screen bug
-        document.querySelectorAll('.glightbox').forEach(item => {
+        // Task 2: Ultra-resilient Manual Lightbox Listener
+        document.querySelectorAll('.gallery-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                // Ensure we don't naturally navigate or target the wrong inner icon
-                const targetHref = item.getAttribute('href');
-                if (!targetHref) {
-                    const img = item.querySelector('img');
-                    if (img) item.setAttribute('href', img.src);
+                const imgNode = e.currentTarget.querySelector('img');
+                if (imgNode && imgNode.src) {
+                    document.getElementById('lightbox-image').src = imgNode.src;
+                    document.getElementById('lightbox-modal').classList.remove('hidden');
                 }
             });
         });
 
         document.getElementById('view-all-gallery-btn')?.addEventListener('click', (e) => { 
             e.preventDefault();
-            lightbox.open(); 
+            // Start the marquee if it wasn't already or just scroll
+            carousel.scrollLeft = 0;
+            window.showToast("Swipe to explore full gallery");
         });
 
         // Smooth Marquee Auto-Scroll
