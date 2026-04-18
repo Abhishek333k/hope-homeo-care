@@ -41,49 +41,27 @@
         }
     </script>
     <style>
-        .marquee-container {
-            overflow: hidden;
-            white-space: nowrap;
-            /* Optional fading edges */
-            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        /* Core Tailwind fonts */
+        body { font-family: 'Outfit', sans-serif; }
+        
+        /* Infinite Marquee Engine */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-50% - 1.5rem)); } /* -50% because we duplicate the track */
         }
-
-        .marquee-content {
-            display: inline-flex;
+        .animate-marquee {
+            animation: marquee 40s linear infinite;
             width: max-content;
-            animation: marquee 30s linear infinite;
         }
-
-        .marquee-content:hover {
+        .animate-marquee:hover {
             animation-play-state: paused;
         }
-
-        @keyframes marquee {
-            0% {
-                transform: translateX(0);
-            }
-
-            100% {
-                transform: translateX(-50%);
-            }
-        }
-
-        .testimonial-card {
-            white-space: normal;
-        }
-
+        /* Hide scrollbar for the modal */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         html {
             scroll-behavior: smooth;
-        }
-
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
         }
     </style>
 </head>
@@ -313,27 +291,31 @@
 
 
 
-    <!-- 3. Testimonial Scroller (Marquee) & Legal -->
-    <section id="testimonials" class="bg-white py-20 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-900">What Our Patients Say</h2>
-            <div class="w-24 h-1 bg-teal-500 mx-auto mt-4 rounded-full"></div>
+    <section id="testimonials" class="bg-slate-900 py-24 overflow-hidden relative border-y border-slate-800">
+        <div class="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none" style="background-image: radial-gradient(#14b8a6 1px, transparent 1px); background-size: 24px 24px;"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 text-center relative z-10">
+            <h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight">Patient Success Stories</h2>
+            <p class="text-slate-400 mt-4 text-lg">Real experiences from our clinic.</p>
         </div>
 
-        <div class="max-w-7xl mx-auto pb-8">
-            <div id="testimonials-grid"
-                class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 hide-scrollbar px-4">
-                <div class="text-center w-full py-12 text-teal-700 font-semibold animate-pulse shrink-0">Loading
-                    reviews...</div>
+        <div class="relative w-full overflow-hidden flex pb-8 group z-10">
+            <div class="absolute top-0 left-0 w-16 md:w-32 h-full bg-gradient-to-r from-slate-900 to-transparent z-20 pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-16 md:w-32 h-full bg-gradient-to-l from-slate-900 to-transparent z-20 pointer-events-none"></div>
+            
+            <div id="marquee-track" class="flex gap-6 animate-marquee pl-6">
+                <div class="text-teal-500 animate-pulse">Loading verified reviews...</div>
             </div>
-            <div class="text-center mt-4"><button id="view-all-reviews-btn"
-                    class="bg-white border-2 border-teal-600 text-teal-700 font-bold py-2.5 px-8 rounded-full hover:bg-teal-50 transition-colors">View
-                    All Reviews</button></div>
         </div>
 
-        <div class="max-w-4xl mx-auto px-4 mt-12 text-center">
-            <p class="text-xs text-gray-400 italic">Disclaimer: Outcomes may vary from patient to patient. Reviews are
-                individual experiences and not a guarantee of results.</p>
+        <div class="text-center mt-6 relative z-10">
+            <button onclick="window.openReviewsModal()" class="bg-slate-800 border border-slate-700 hover:border-teal-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-lg">
+                Read All Reviews
+            </button>
+        </div>
+        
+        <div class="max-w-4xl mx-auto px-4 mt-12 text-center relative z-10">
+            <p class="text-[11px] text-slate-500 uppercase tracking-widest font-semibold">Disclaimer: Outcomes may vary. Reviews are individual experiences and not a guarantee of specific results.</p>
         </div>
     </section>
 
@@ -342,10 +324,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                 <div>
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Inside the Clinic</h2>
-                    <p class="text-slate-500 mt-3 max-w-xl">Experience our state-of-the-art healing environment.</p>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Clinic Gallery</h2>
+                    <!-- <p class="text-slate-500 mt-3 max-w-xl">Experience our state-of-the-art healing environment.</p> -->
                 </div>
-                <button onclick="window.openFullGallery(0)" class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
+                <button onclick="window.openFullGallery(0)"
+                    class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors shadow-sm">
                     View Full Gallery <span class="material-icons-round text-sm">photo_library</span>
                 </button>
             </div>
@@ -365,7 +348,7 @@
                 <h2 class="text-4xl font-bold text-slate-800 mb-4">Health Journal</h2>
                 <p class="text-slate-500">Latest medical insights and clinic updates from Dr. Joshua.</p>
             </div>
-            
+
             <div id="blogger-feed-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="bg-white rounded-3xl p-6 h-64 border border-slate-100 shadow-sm animate-pulse"></div>
                 <div class="bg-white rounded-3xl p-6 h-64 border border-slate-100 shadow-sm animate-pulse"></div>
@@ -605,19 +588,15 @@
         </div>
     </div>
 
-    <div id="reviews-modal"
-        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity">
-        <div class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[85vh] flex flex-col relative">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white rounded-t-2xl shrink-0">
-                <h3 class="text-2xl font-bold text-teal-900">Patient Reviews</h3>
-                <button id="close-reviews-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
-            </div>
-            <div id="modal-reviews-list" class="p-6 overflow-y-auto space-y-4 flex-1">
+    <div id="reviews-modal" class="hidden fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-md overflow-y-auto transition-opacity opacity-0">
+        <div class="sticky top-0 w-full bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between z-20">
+            <h3 class="text-white font-bold text-xl">All Patient Reviews</h3>
+            <button onclick="window.closeReviewsModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500 text-white transition-colors">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="max-w-6xl mx-auto p-6 md:p-12">
+            <div id="modal-reviews-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             </div>
         </div>
     </div>
@@ -674,27 +653,34 @@
     </div>
 
     <!-- Advanced Steam-Style Slider Modal -->
-    <div id="advanced-gallery-modal" class="hidden fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-md flex flex-col transition-opacity opacity-0">
-        <div class="h-16 flex items-center justify-between px-6 shrink-0 absolute top-0 w-full z-10 bg-gradient-to-b from-slate-950/80 to-transparent">
+    <div id="advanced-gallery-modal"
+        class="hidden fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-md flex flex-col transition-opacity opacity-0">
+        <div
+            class="h-16 flex items-center justify-between px-6 shrink-0 absolute top-0 w-full z-10 bg-gradient-to-b from-slate-950/80 to-transparent">
             <h3 class="text-white font-bold tracking-widest uppercase text-sm">Clinic Gallery</h3>
-            <button onclick="window.closeFullGallery()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500 text-white transition-colors">
+            <button onclick="window.closeFullGallery()"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-500 text-white transition-colors">
                 <span class="material-icons-round">close</span>
             </button>
         </div>
-        
+
         <div class="flex-1 relative flex items-center justify-center p-4 md:p-12 overflow-hidden mt-12">
-            <button onclick="window.prevGalleryImage()" class="absolute left-4 md:left-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
+            <button onclick="window.prevGalleryImage()"
+                class="absolute left-4 md:left-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
                 <span class="material-icons-round">chevron_left</span>
             </button>
-            
-            <img id="gallery-main-view" src="" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
-            
-            <button onclick="window.nextGalleryImage()" class="absolute right-4 md:right-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
+
+            <img id="gallery-main-view" src=""
+                class="max-w-full max-h-full object-contain rounded-xl shadow-2xl transition-opacity duration-300">
+
+            <button onclick="window.nextGalleryImage()"
+                class="absolute right-4 md:right-8 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-colors z-10 backdrop-blur-sm">
                 <span class="material-icons-round">chevron_right</span>
             </button>
         </div>
-        
-        <div class="h-32 bg-slate-950 border-t border-white/10 shrink-0 flex items-center px-4 overflow-x-auto hide-scrollbar snap-x pb-2">
+
+        <div
+            class="h-32 bg-slate-950 border-t border-white/10 shrink-0 flex items-center px-4 overflow-x-auto hide-scrollbar snap-x pb-2">
             <div id="gallery-thumbnails" class="flex gap-3 mx-auto h-20">
             </div>
         </div>

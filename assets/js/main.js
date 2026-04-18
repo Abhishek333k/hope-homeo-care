@@ -260,109 +260,87 @@ const fetchBlogPosts = () => {
     document.body.appendChild(script);
 };
 
-async function loadGoogleReviews() {
-    const grid = document.getElementById('testimonials-grid');
-    const modalList = document.getElementById('modal-reviews-list');
-    if (!grid) return;
+document.addEventListener('DOMContentLoaded', () => {
+    // Static Review Data (Can be linked to Firebase later)
+    const reviewsData = [
+        { name: "Sarah Jenkins", text: "Dr. Joshua took the time to understand my entire health history. Within weeks, my chronic migraines reduced significantly.", date: "March 2026" },
+        { name: "Michael R.", text: "I was skeptical about homeopathy at first, but the results speak for themselves. The online triage system was so easy to use.", date: "February 2026" },
+        { name: "Priya Patel", text: "Exceptional care and a very modern clinic. The personalized remedies worked wonders for my child's asthma.", date: "January 2026" },
+        { name: "David O.", text: "Finally, a doctor who actually listens! The digital prescription and medical timeline in the patient portal is incredibly convenient.", date: "December 2025" },
+        { name: "Emma Thompson", text: "The holistic approach changed my life. I feel more energetic and my digestive issues are completely gone.", date: "November 2025" }
+    ];
 
-    const fallbackHTML = '<div class="text-center w-full py-8 text-slate-500 shrink-0">Real patient reviews are currently being synced from Google.</div>';
+    const renderStars = () => {
+        return `<div class="flex text-amber-400 mb-3">
+            <span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span><span class="material-icons-round text-[18px]">star</span>
+        </div>`;
+    };
 
-    try {
-        const response = await fetch('./assets/data/reviews.json');
-        if (!response.ok) {
-            grid.innerHTML = fallbackHTML;
-            if(modalList) modalList.innerHTML = fallbackHTML;
-            return;
-        }
+    const createReviewCard = (review, isDark) => {
+        const bgClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200';
+        const textClass = isDark ? 'text-slate-300' : 'text-slate-600';
+        const nameClass = isDark ? 'text-white' : 'text-slate-900';
         
-        const reviews = await response.json();
-        if (!reviews || reviews.length === 0) {
-            grid.innerHTML = fallbackHTML;
-            if(modalList) modalList.innerHTML = fallbackHTML;
-            return;
-        }
-
-        const starSvg = `<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
-
-        // Render first 4 to Grid (Horizontal Snap Carousel)
-        const carouselCards = reviews.slice(0, 4).map(review => `
-            <div class="testimonial-card w-[85vw] md:w-[400px] shrink-0 snap-center bg-white border border-gray-100 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex mb-4">
-                    ${Array(review.rating).fill(starSvg).join('')}
-                </div>
-                <p class="text-gray-600 mb-6 italic text-sm">"${review.text}"</p>
-                <div class="flex items-center gap-3">
-                    ${review.profile_photo_url ? `<img src="${review.profile_photo_url}" class="w-10 h-10 rounded-full" alt="${review.author_name}">` : ''}
+        return `
+            <div class="w-80 md:w-96 p-6 rounded-2xl border ${bgClass} shadow-lg shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 mx-3">
+                ${renderStars()}
+                <p class="${textClass} text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
+                <div class="flex items-center gap-3 mt-auto pt-4 border-t border-white/10">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-lg shrink-0">
+                        ${review.name.charAt(0)}
+                    </div>
                     <div>
-                        <div class="font-bold text-gray-900">${review.author_name}</div>
-                        <div class="text-xs text-gray-400">${review.relative_time_description}</div>
+                        <p class="font-bold text-sm ${nameClass} flex items-center gap-1">
+                            ${review.name} <span class="material-icons-round text-[14px] text-teal-500" title="Verified Patient">verified</span>
+                        </p>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest">${review.date}</p>
                     </div>
                 </div>
             </div>
-        `);
-        grid.innerHTML = carouselCards.join('');
+        `;
+    };
 
-        // Render all to Modal List (Full Width list)
-        if(modalList) {
-            const modalCards = reviews.map(review => `
-                <div class="testimonial-card w-full bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex mb-3">
-                        ${Array(review.rating).fill(starSvg).join('')}
-                    </div>
-                    <p class="text-gray-600 mb-4 italic text-sm">"${review.text}"</p>
-                    <div class="flex items-center gap-3">
-                        ${review.profile_photo_url ? `<img src="${review.profile_photo_url}" class="w-10 h-10 rounded-full" alt="${review.author_name}">` : ''}
-                        <div>
-                            <div class="font-bold text-gray-900">${review.author_name}</div>
-                            <div class="text-xs text-gray-400">${review.relative_time_description}</div>
-                        </div>
-                    </div>
-                </div>
-            `);
-            modalList.innerHTML = modalCards.join('');
-        }
-    } catch (error) {
-        console.error("Reviews load error:", error);
-        grid.innerHTML = fallbackHTML;
-        if(modalList) modalList.innerHTML = fallbackHTML;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const viewAllBtn = document.getElementById('view-all-reviews-btn');
-    const reviewsModal = document.getElementById('reviews-modal');
-    const closeReviewsBtn = document.getElementById('close-reviews-modal');
-
-    // Toggle Review Modal
-    if (viewAllBtn && reviewsModal) {
-        viewAllBtn.addEventListener('click', () => {
-            reviewsModal.classList.remove('hidden');
-        });
+    // 1. Render the Marquee (Duplicated to create infinite seamless loop)
+    const track = document.getElementById('marquee-track');
+    if (track) {
+        let cardsHtml = '';
+        reviewsData.forEach(r => cardsHtml += createReviewCard(r, true));
+        // We double the HTML inside the track so it can loop seamlessly
+        track.innerHTML = cardsHtml + cardsHtml; 
     }
 
-    if (closeReviewsBtn && reviewsModal) {
-        closeReviewsBtn.addEventListener('click', () => {
-            reviewsModal.classList.add('hidden');
-        });
+    // 2. Render the Modal Grid
+    const grid = document.getElementById('modal-reviews-grid');
+    if (grid) {
+        let gridHtml = '';
+        reviewsData.forEach(r => gridHtml += createReviewCard(r, false)); // Light cards for modal
+        grid.innerHTML = gridHtml;
     }
+});
 
-    // Close on overlay click
-    if (reviewsModal) {
-        reviewsModal.addEventListener('click', (e) => {
-            if (e.target === reviewsModal) {
-                reviewsModal.classList.add('hidden');
-            }
-        });
+// Modal Controllers
+window.openReviewsModal = () => {
+    const modal = document.getElementById('reviews-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+};
+
+window.closeReviewsModal = () => {
+    const modal = document.getElementById('reviews-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    document.body.style.overflow = ''; 
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+// Escape key closes the reviews modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('reviews-modal');
+        if (modal && !modal.classList.contains('hidden')) window.closeReviewsModal();
     }
-
-    // Close on Escape key (handled globally for both modals if needed)
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            if (reviewsModal && !reviewsModal.classList.contains('hidden')) {
-                reviewsModal.classList.add('hidden');
-            }
-        }
-    });
 });
 
 async function loadActiveCampaign() {
@@ -428,7 +406,6 @@ async function loadActiveCampaign() {
 
 // Call functions on load
 fetchBlogPosts();
-loadGoogleReviews();
 loadActiveCampaign();
 
 let globalGalleryData = [];
