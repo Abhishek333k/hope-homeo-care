@@ -205,7 +205,7 @@ window.closeInternalBooking = () => {
 // Initialize Flatpickr for Internal Booking
 document.addEventListener('DOMContentLoaded', () => {
     const intDateInput = document.getElementById('int-book-date');
-    if (intDateInput) {
+    if (intDateInput && typeof flatpickr !== 'undefined') {
         flatpickr(intDateInput, {
             minDate: "today",
             disable: [
@@ -249,10 +249,13 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
 const loadMedicalRecords = async () => {
     const list = document.getElementById('records-list');
     if (!list) return;
+
     if (!currentCompositeId) {
+        console.warn("Attempted to load records without a valid composite ID.");
         list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No medical records found. The clinic will update this after your visit.</p></div>';
         return;
     }
+
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
     try {
         const q = query(collection(db, "patients", currentCompositeId, "logs"), orderBy("timestamp", "desc"));
@@ -307,7 +310,11 @@ const loadProfileDetails = async () => {
 };
 
 const logoutBtn = document.getElementById('logout-btn');
-logoutBtn?.addEventListener('click', () => signOut(auth));
+logoutBtn?.addEventListener('click', () => {
+    logoutBtn.innerText = "Logging out...";
+    logoutBtn.disabled = true;
+    signOut(auth);
+});
 
 // Accessibility Hotkeys
 document.addEventListener('keydown', (e) => {

@@ -579,6 +579,16 @@ if (loginModal && openPortalBtns.length > 0) {
     openPortalBtns.forEach(btn => btn.addEventListener('click', openLogin));
     closeLoginBtn?.addEventListener('click', closeLogin);
 
+    // Global Escape Handler for Login Modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const loginModal = document.getElementById('login-modal');
+            if (loginModal && !loginModal.classList.contains('hidden')) {
+                closeLogin();
+            }
+        }
+    });
+
     // OTP Flow
     const sendOtpBtn = document.getElementById('send-otp-btn');
     const verifyOtpBtn = document.getElementById('verify-otp-btn');
