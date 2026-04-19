@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Consent | Hope Homeo Care</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { colors: { teal: { 600: '#16a34a', 700: '#15803d', 50: '#f0fdf4' }, slate: { 800: '#0f172a', 900: '#0B1320' } }, fontFamily: { sans: ['Outfit', 'sans-serif'] } } } }</script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
+    <header class="bg-white border-b border-slate-200 py-6 px-6 text-center">
+        <a href="index.html"
+            class="inline-flex items-center gap-2 text-teal-700 font-bold hover:text-teal-800 transition-colors">
+            <span class="material-icons-round">arrow_back</span> Back to Clinic
+        </a>
+    </header>
+    <main class="flex-1 max-w-4xl mx-auto w-full p-6 py-12">
+        <div class="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-icons-round text-teal-600 text-3xl">verified_user</span>
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Telemedicine & Treatment Consent</h1>
+            </div>
+            <p class="text-slate-500 mb-8 pb-8 border-b border-slate-100">Compliant with Telemedicine Practice
+                Guidelines, India.</p>
+
+            <div
+                class="space-y-6 text-slate-600 leading-relaxed bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-100">
+                <p>By checking the consent box during the booking process or logging into the Patient Portal, you
+                    explicitly agree to the following:</p>
+                <ul class="list-disc pl-5 space-y-4 font-medium text-slate-700">
+                    <li>I consent to undergoing medical consultation via digital/telemedicine platforms with Dr. K.
+                        Nikhil Joshua.</li>
+                    <li>I understand that while telemedicine is highly effective, it has limitations compared to an
+                        in-person physical examination.</li>
+                    <li>I consent to the clinic storing my medical records, prescriptions, and session history in a
+                        secure digital format.</li>
+                    <li>I understand that I am receiving Homeopathic treatment, and I have disclosed any concurrent
+                        allopathic treatments or medications I am currently taking.</li>
+                    <li>I acknowledge that the clinic may contact me via WhatsApp, SMS, or Phone regarding my health
+                        records and appointments.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
