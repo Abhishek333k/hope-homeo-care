@@ -14,6 +14,54 @@ let currentCleanPhone = null;
 let currentCompositeId = null;
 let currentPatientName = null;
 
+window.calculateAge = (dobString) => {
+    if (!dobString) return "--";
+    const dob = new Date(dobString);
+    if (isNaN(dob)) return "--";
+    const diff = Date.now() - dob.getTime();
+    const ageDate = new Date(diff);
+    const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+    return age > 0 ? age : "--";
+};
+
+const loadProfileHeader = async () => {
+    const nameEl = document.getElementById('profile-name');
+    const avatarEl = document.getElementById('profile-avatar');
+    const pillsEl = document.getElementById('profile-pills');
+    if (!nameEl || !avatarEl || !pillsEl || !currentCompositeId) return;
+
+    nameEl.innerText = currentPatientName || "Patient";
+    avatarEl.innerText = currentPatientName ? currentPatientName.charAt(0).toUpperCase() : "P";
+    pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 animate-pulse">Synchronizing Demographics...</span>';
+
+    try {
+        const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
+        if (docSnap.exists()) {
+            const p = docSnap.data();
+            let ageDisplay = p.dob ? `${window.calculateAge(p.dob)} Years` : (p.age ? `${p.age} Years` : '--');
+            
+            let genderStyle = 'bg-slate-50 text-slate-600 border-slate-200';
+            if (p.gender) {
+                const g = p.gender.toLowerCase();
+                if (g === 'male' || g === 'm') genderStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+                else if (g === 'female' || g === 'f') genderStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+            }
+
+            pillsEl.innerHTML = `
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${genderStyle}">${p.gender || '--'}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-slate-50 text-slate-700 border-slate-200">${ageDisplay}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">${p.bloodGroup || '--'}</span>
+            `;
+        } else {
+            pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 border border-slate-200 px-3 py-1 rounded-full">Profile Data Incomplete</span>';
+        }
+    } catch (err) {
+        console.error("Profile Header fetch error:", err);
+        pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 border border-slate-200 px-3 py-1 rounded-full">Systems Offline</span>';
+    }
+};
+
+
 window.velocityFollowUp = (caseId) => {
     if (typeof window.openInternalBooking === 'function') {
         window.openInternalBooking();
@@ -217,6 +265,7 @@ window.selectProfile = (name, phone) => {
     
     document.getElementById('switch-profile-btn')?.classList.remove('hidden');
 
+    loadProfileHeader();
     loadClinicalFeed();
 };
 
@@ -379,8 +428,27 @@ const loadClinicalFeed = async () => {
                         }
                     }
                 } else {
-                    privateNote = `<div class="mt-4 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide bg-slate-50 p-3 rounded-xl border border-slate-100 w-max">
-                        <span class="material-icons-round text-[14px]">lock</span> Awaiting Doctor's Review for clinical notes
+                    let gcalBtn = '';
+                    if (item.date) {
+                        const dateStr = item.date.replace(/-/g, '');
+                        // End date should technically be slightly after, just doing to next day for template simplicity
+                        const nextDayDate = new Date(new Date(item.date).getTime() + 86400000);
+                        const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
+                        const detailsUrl = encodeURIComponent(item.symptoms || 'General Checkup');
+                        const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+K.+Nikhil+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason:+${detailsUrl}&location=Hope+Homeo+Care,+Mangalagiri`;
+                        
+                        gcalBtn = `
+                            <a href="${gcalUrl}" target="_blank" class="shrink-0 text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1">
+                                <span class="material-icons-round text-[14px]">event</span> Add to Calendar
+                            </a>
+                        `;
+                    }
+
+                    privateNote = `<div class="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide">
+                            <span class="material-icons-round text-[14px]">lock</span> Awaiting Doctor's Review for clinical notes
+                        </span>
+                        ${gcalBtn}
                     </div>`;
                 }
 
