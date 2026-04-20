@@ -26,38 +26,62 @@ window.calculateAge = (dobString) => {
 
 const loadProfileHeader = async () => {
     const nameEl = document.getElementById('profile-name');
+    const memberSinceEl = document.getElementById('profile-member-since');
     const avatarEl = document.getElementById('profile-avatar');
     const pillsEl = document.getElementById('profile-pills');
     if (!nameEl || !avatarEl || !pillsEl || !currentCompositeId) return;
 
     nameEl.innerText = currentPatientName || "Patient";
     avatarEl.innerText = currentPatientName ? currentPatientName.charAt(0).toUpperCase() : "P";
-    pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 animate-pulse">Synchronizing Demographics...</span>';
+    if (memberSinceEl) memberSinceEl.innerText = "Syncing Profile...";
+    pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 animate-pulse">Synchronizing Data...</span>';
 
     try {
         const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
         if (docSnap.exists()) {
             const p = docSnap.data();
-            let ageDisplay = p.dob ? `${window.calculateAge(p.dob)} Years` : (p.age ? `${p.age} Years` : '--');
             
-            let genderStyle = 'bg-slate-50 text-slate-600 border-slate-200';
+            // 1. "Member Since" Logic
+            if (memberSinceEl) {
+                // Determine joined date (use timestamp if exists, else fallback)
+                let joinedYear = new Date().getFullYear(); 
+                if (p.timestamp) joinedYear = p.timestamp.toDate().getFullYear();
+                else if (p.createdAt) joinedYear = new Date(p.createdAt).getFullYear();
+                memberSinceEl.innerText = `Member Since ${joinedYear}`;
+            }
+
+            // 2. High-Contrast Pills
+            // Age Fallback Logic
+            let ageDisplay = '--';
+            if (p.dob) {
+                const calc = window.calculateAge(p.dob);
+                if (calc !== '--' && !isNaN(calc)) ageDisplay = `${calc} Yrs`;
+                else if (p.age) ageDisplay = `${p.age} Yrs`; // Fallback to legacy
+            } else if (p.age) {
+                ageDisplay = `${p.age} Yrs`;
+            }
+            
+            // Gender
+            let genderStyle = 'bg-slate-100 text-slate-700 border-none';
             if (p.gender) {
                 const g = p.gender.toLowerCase();
-                if (g === 'male' || g === 'm') genderStyle = 'bg-blue-50 text-blue-700 border-blue-200';
-                else if (g === 'female' || g === 'f') genderStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+                if (g === 'male' || g === 'm') genderStyle = 'bg-blue-100 text-blue-700 border-none';
+                else if (g === 'female' || g === 'f') genderStyle = 'bg-rose-100 text-rose-700 border-none';
             }
 
             pillsEl.innerHTML = `
-                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${genderStyle}">${p.gender || '--'}</span>
-                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-slate-50 text-slate-700 border-slate-200">${ageDisplay}</span>
-                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">${p.bloodGroup || '--'}</span>
+                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${genderStyle}">${p.gender || 'Unknown'}</span>
+                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-800 border-none drop-shadow-sm">${ageDisplay}</span>
+                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700 border-none shadow-sm flex items-center gap-1"><span class="material-icons-round text-[12px]">water_drop</span>${p.bloodGroup || '--'}</span>
             `;
         } else {
-            pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 border border-slate-200 px-3 py-1 rounded-full">Profile Data Incomplete</span>';
+            pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Profile Data Incomplete</span>';
+            if (memberSinceEl) memberSinceEl.innerText = "";
         }
     } catch (err) {
         console.error("Profile Header fetch error:", err);
-        pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 border border-slate-200 px-3 py-1 rounded-full">Systems Offline</span>';
+        pillsEl.innerHTML = '<span class="text-xs font-bold text-rose-400 bg-rose-50 px-3 py-1 rounded-full">System Offline</span>';
+        if (memberSinceEl) memberSinceEl.innerText = "";
     }
 };
 
