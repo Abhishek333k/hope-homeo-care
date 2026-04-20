@@ -78,29 +78,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 static: true, 
                 disableMobile: "true",
                 onChange: function(selectedDates, dateStr, instance) {
-                    // 2. Dynamically Lock/Unlock the Time Dropdown Options
-                    Array.from(timeSelect.options).forEach(opt => {
-                        opt.disabled = false; // Reset first
-                        opt.text = opt.text.replace(' (Unavailable)', '');
-                    });
-
-                    if (blockedSlots.includes(`${dateStr}|Morning`)) {
-                        timeSelect.querySelectorAll('optgroup[label*="Morning"] option').forEach(opt => {
-                            opt.disabled = true;
-                            if (!opt.text.includes('(Unavailable)')) opt.text += ' (Unavailable)';
-                        });
-                    }
-                    if (blockedSlots.includes(`${dateStr}|Evening`)) {
-                        timeSelect.querySelectorAll('optgroup[label*="Evening"] option').forEach(opt => {
-                            opt.disabled = true;
-                            if (!opt.text.includes('(Unavailable)')) opt.text += ' (Unavailable)';
-                        });
-                    }
+                    const parts = dateStr.split('/');
+                    const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
                     
-                    // Auto-clear time selection if the newly selected date blocks their previously chosen time
-                    if (timeSelect.options[timeSelect.selectedIndex]?.disabled) {
-                        timeSelect.value = "";
-                    }
+                    document.querySelectorAll('.slot-pill').forEach(pill => {
+                        const time = pill.dataset.value;
+                        const isBlocked = blockedSlots.includes(`${isoDate}|${time}`);
+                        pill.disabled = isBlocked;
+                        if (isBlocked) {
+                            pill.classList.add('opacity-40', 'cursor-not-allowed', 'bg-slate-100');
+                            pill.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
+                        } else {
+                            pill.classList.remove('opacity-40', 'cursor-not-allowed', 'bg-slate-100');
+                        }
+                    });
+                    document.getElementById('patient-time').value = "";
                 }
             });
         }
@@ -122,6 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply to Public Booking Form (main.js)
     applyDynamicValidation('patient-date', 'patient-time');
+
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('slot-pill') && !e.target.disabled) {
+            document.querySelectorAll('.slot-pill').forEach(p => {
+                p.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
+                p.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            });
+            e.target.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+            e.target.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
+            const hiddenInput = document.getElementById('patient-time');
+            if (hiddenInput) hiddenInput.value = e.target.dataset.value;
+        }
+    });
 
     const modal = document.getElementById('booking-modal');
     if (!modal) return;

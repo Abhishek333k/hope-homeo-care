@@ -91,52 +91,47 @@
         </div>
     </header>
 
-    <div id="portal-nav" class="hidden max-w-4xl mx-auto w-full px-6 mt-8 border-b border-slate-200 flex gap-6">
-        <button id="tab-dashboard" class="tab-btn pb-3 border-b-2 border-teal-600 text-teal-700 font-bold text-sm transition-all">Overview</button>
-        <button id="tab-records" class="tab-btn pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm transition-all">Medical Records & Prescriptions</button>
-        <button id="tab-profile" class="tab-btn pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm transition-all">My Profile</button>
-    </div>
-
     <main class="flex-1 flex flex-col p-6 overflow-y-auto">
         
         <div id="profile-selector-view" class="hidden w-full max-w-2xl mx-auto mt-8 text-center">
-            <h2 class="text-3xl font-bold text-slate-800 mb-2">Who is accessing?</h2>
+            <h2 class="text-3xl font-extrabold text-slate-800 mb-2">Who is accessing?</h2>
             <p class="text-slate-500 mb-8">Multiple profiles are linked to this mobile number.</p>
             <div id="family-profiles-container" class="flex flex-wrap justify-center gap-6">
+                <!-- Profiles injected by JS -->
             </div>
         </div>
 
-        <div id="dashboard-view" class="hidden w-full max-w-4xl mx-auto">
-            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-3xl font-bold text-slate-800">Recent Appointments</h2>
-                    <p class="text-slate-500">Your upcoming and past clinic visits.</p>
+        <div id="unified-feed-view" class="hidden max-w-3xl mx-auto w-full px-4 pb-20">
+            <!-- Profile Sticky Header -->
+            <div class="sticky top-0 z-20 mb-8 transform transition-all duration-300">
+                <div class="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[2rem] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.06)] flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div id="feed-avatar" class="w-12 h-12 rounded-2xl bg-teal-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-teal-600/20">
+                            <!-- Initials -->
+                        </div>
+                        <div class="overflow-hidden">
+                            <h2 id="feed-patient-name" class="text-lg font-bold text-slate-800 leading-none truncate">Patient Name</h2>
+                            <p id="feed-patient-phone" class="text-slate-500 text-[13px] font-medium mt-1 truncate">+91 0000000000</p>
+                        </div>
+                    </div>
+                    <button id="switch-profile-btn" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-teal-600 hover:bg-teal-50 hover:border-teal-100 transition-all active:scale-95" title="Switch Profile">
+                        <span class="material-icons-round">group</span>
+                    </button>
                 </div>
-                <button onclick="window.openInternalBooking()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-teal-600/20 transition-all flex items-center gap-2">
-                    <span class="material-icons-round">add_circle</span> Book Session
+            </div>
+
+            <!-- Primary Action -->
+            <div class="mb-10">
+                <button onclick="window.openInternalBooking()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl shadow-slate-900/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span class="material-icons-round">add_circle</span> Request New Appointment
                 </button>
             </div>
-            <div id="patient-appointments-list" class="space-y-4">
+
+            <!-- Unified Clinical Feed -->
+            <div class="relative border-l-2 border-slate-200 ml-4 pl-6 space-y-8" id="feed-stream">
+                <!-- Data Stream (Prescriptions + Appointments) will be merged here -->
             </div>
         </div>
-
-        <div id="view-records" class="hidden w-full max-w-4xl mx-auto">
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-slate-800">Medical Records</h2>
-                <p class="text-slate-500">History of prescriptions, diagnostic logs, and expert advice.</p>
-            </div>
-            <div id="records-list" class="space-y-6"></div>
-        </div>
-
-        <div id="view-profile" class="hidden w-full max-w-4xl mx-auto">
-            <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                <h2 class="text-2xl font-bold text-slate-800 mb-6">Personal Profile</h2>
-                <div id="profile-details" class="space-y-4 text-slate-600">
-                    <p class="text-slate-400 italic">Profile information coming soon...</p>
-                </div>
-            </div>
-        </div>
-
     </main>
 
     <div id="recaptcha-container"></div>
@@ -155,31 +150,31 @@
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Date</label>
                     <input type="text" id="int-book-date" placeholder="Select Date" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Time</label>
-                    <select id="int-book-time" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
-                        <option value="" disabled selected>Select a 30-min slot...</option>
-                        <optgroup label="Morning Session">
-                            <option value="10:00 AM">10:00 AM</option>
-                            <option value="10:30 AM">10:30 AM</option>
-                            <option value="11:00 AM">11:00 AM</option>
-                            <option value="11:30 AM">11:30 AM</option>
-                            <option value="12:00 PM">12:00 PM</option>
-                            <option value="12:30 PM">12:30 PM</option>
-                            <option value="1:00 PM">1:00 PM</option>
-                            <option value="1:30 PM">1:30 PM</option>
-                        </optgroup>
-                        <optgroup label="Evening Session">
-                            <option value="5:00 PM">5:00 PM</option>
-                            <option value="5:30 PM">5:30 PM</option>
-                            <option value="6:00 PM">6:00 PM</option>
-                            <option value="6:30 PM">6:30 PM</option>
-                            <option value="7:00 PM">7:00 PM</option>
-                            <option value="7:30 PM">7:30 PM</option>
-                            <option value="8:00 PM">8:00 PM</option>
-                            <option value="8:30 PM">8:30 PM</option>
-                        </optgroup>
-                    </select>
+                <div class="mb-5 w-full overflow-hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Morning Session</label>
+                    <div class="flex overflow-x-auto space-x-3 pb-3 scrollbar-hide w-full snap-x">
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="10:00 AM">10:00 AM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="10:30 AM">10:30 AM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="11:00 AM">11:00 AM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="11:30 AM">11:30 AM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="12:00 PM">12:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="12:30 PM">12:30 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="01:00 PM">01:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="01:30 PM">01:30 PM</button>
+                    </div>
+
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 mt-2">Evening Session</label>
+                    <div class="flex overflow-x-auto space-x-3 pb-3 scrollbar-hide w-full snap-x">
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="05:00 PM">05:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="05:30 PM">05:30 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="06:00 PM">06:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="06:30 PM">06:30 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="07:00 PM">07:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="07:30 PM">07:30 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="08:00 PM">08:00 PM</button>
+                        <button type="button" class="slot-pill snap-start shrink-0 px-5 py-2.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 font-semibold text-sm focus:outline-none transition-colors" data-value="08:30 PM">08:30 PM</button>
+                    </div>
+                    <input type="hidden" id="int-book-time" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Brief Symptoms / Reason</label>
