@@ -33,44 +33,6 @@ window.showToast = (message, type = 'success') => {
     }, 4000);
 };
 
-// Tab Switching Engine
-const setupTabs = () => {
-    const tabs = ['dashboard', 'records', 'profile'];
-    tabs.forEach(tab => {
-        const tabEl = document.getElementById(`tab-${tab}`);
-        if (!tabEl) return;
-        
-        const newTabEl = tabEl.cloneNode(true);
-        tabEl.parentNode.replaceChild(newTabEl, tabEl);
-        
-        newTabEl.addEventListener('click', (e) => {
-            tabs.forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                if (btn) {
-                    btn.classList.remove('border-teal-600', 'text-teal-700', 'font-bold');
-                    btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
-                }
-                const viewId = t === 'dashboard' ? 'dashboard-view' : `view-${t}`;
-                document.getElementById(viewId)?.classList.add('hidden');
-            });
-            
-            e.target.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
-            e.target.classList.add('border-teal-600', 'text-teal-700', 'font-bold');
-            
-            if (tab === 'dashboard') {
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                loadAppointments();
-            } else if (tab === 'records') {
-                document.getElementById('view-records').classList.remove('hidden');
-                loadMedicalRecords(); 
-            } else if (tab === 'profile') {
-                document.getElementById('view-profile').classList.remove('hidden');
-                loadProfileDetails();
-            }
-        });
-    });
-};
-
 // Auth & Family Selector Logic
 const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -87,11 +49,10 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         document.getElementById('logout-btn')?.classList.remove('hidden');
         
         try {
-            // SEQUENTIAL FETCH ENGINE (No 'in' queries)
+            // SEQUENTIAL FETCH ENGINE
             const rawPhoneQuery = query(collection(db, "patients"), where("phone", "==", user.phoneNumber));
             let snapshot = await getDocs(rawPhoneQuery);
             
-            // Fallback
             if (snapshot.empty) {
                 console.log("No exact match. Trying sanitized fallback...");
                 const cleanPhoneQuery = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
@@ -111,7 +72,7 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     const p = doc.data();
                     html += `
                         <button onclick="window.selectProfile('${p.name}', '${currentCleanPhone}')" 
-                            class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
+                            class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 md:w-36 group">
                             <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
                                 ${p.name.charAt(0).toUpperCase()}
                             </div>
@@ -120,12 +81,10 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                 });
                 container.innerHTML = html;
                 document.getElementById('profile-selector-view').classList.remove('hidden');
-                document.getElementById('dashboard-view').classList.add('hidden');
-                document.getElementById('portal-nav').classList.add('hidden');
+                document.getElementById('clinical-feed-view').classList.add('hidden');
             }
         } catch (err) {
             console.error("Firestore Registry Error - Details:", err);
-            // Graceful degrade - DO NOT REDIRECT
             const container = document.getElementById('family-profiles-container');
             if (container) {
                 container.innerHTML = `
@@ -164,7 +123,7 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     window.showToast("Appointment requested successfully!");
                     window.closeInternalBooking();
                     document.getElementById('internal-booking-form').reset();
-                    loadAppointments();
+                    loadClinicalFeed();
                 } catch(err) {
                     console.error("Internal booking failed:", err);
                     window.showToast("Failed to book appointment. Please check your connection.", "error");
@@ -196,7 +155,6 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         }
 
     } else {
-        // ONLY redirect here, after Firebase explicitly confirms no user exists
         console.log("No active session found. Redirecting to login...");
         currentCleanPhone = null;
         currentPatientName = null;
@@ -211,112 +169,199 @@ window.selectProfile = (name, phone) => {
     currentCompositeId = name ? `${phone}_${name.toLowerCase().replace(/[^a-z0-9]/g, '')}` : null;
     
     document.getElementById('profile-selector-view').classList.add('hidden');
-    document.getElementById('portal-nav').classList.remove('hidden');
-    document.getElementById('dashboard-view').classList.remove('hidden');
+    document.getElementById('clinical-feed-view').classList.remove('hidden');
     
     document.getElementById('switch-profile-btn')?.classList.remove('hidden');
 
-    setupTabs();
-    loadAppointments();
+    loadClinicalFeed();
 };
 
 document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
-    ['portal-nav', 'dashboard-view', 'view-records', 'view-profile'].forEach(id => {
-        document.getElementById(id)?.classList.add('hidden');
-    });
+    document.getElementById('clinical-feed-view')?.classList.add('hidden');
     
     currentCompositeId = null;
     currentPatientName = null;
     document.getElementById('profile-selector-view').classList.remove('hidden');
 });
 
-const loadAppointments = async () => {
-    const list = document.getElementById('patient-appointments-list');
-    if (!list) return;
-    list.innerHTML = '<p class="text-slate-500 animate-pulse">Syncing your schedule...</p>';
+// --- Unified Clinical Timeline Engine ---
+const loadClinicalFeed = async () => {
+    const feed = document.getElementById('clinical-feed');
+    const remedyCard = document.getElementById('current-remedy-card');
+    const remedyDetails = document.getElementById('current-remedy-details');
+    if (!feed) return;
+    
+    feed.innerHTML = '<p class="text-slate-500 animate-pulse relative -left-4 font-bold">Syncing your clinical timeline...</p>';
+    remedyCard.classList.add('hidden');
     
     try {
         const user = auth.currentUser;
-        
-        // SEQUENTIAL FETCH ENGINE
-        let snapshot;
+        let feedItems = [];
+
+        // 1. Fetch Appointments
+        let aptSnap;
         if (user && user.phoneNumber) {
             const rawPhoneQuery = query(collection(db, "appointments"), where("phone", "==", user.phoneNumber));
-            snapshot = await getDocs(rawPhoneQuery);
+            aptSnap = await getDocs(rawPhoneQuery);
         }
-        
-        if (!snapshot || snapshot.empty) {
-            const cleanPhoneQuery = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
-            snapshot = await getDocs(cleanPhoneQuery);
-        }
-        
-        let appointments = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (currentPatientName) {
-                const dbName = (data.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                const currName = currentPatientName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (dbName === currName) appointments.push({ id: doc.id, ...data });
-            } else {
-                appointments.push({ id: doc.id, ...data });
+        if (!aptSnap || aptSnap.empty) {
+            if (currentCleanPhone) {
+                const cleanPhoneQuery = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+                aptSnap = await getDocs(cleanPhoneQuery);
             }
-        });
+        }
+        
+        if (aptSnap && !aptSnap.empty) {
+            aptSnap.forEach(doc => {
+                const data = doc.data();
+                if (currentPatientName) {
+                    const dbName = (data.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const currName = currentPatientName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (dbName === currName) feedItems.push({ _type: 'appointment', id: doc.id, ...data });
+                } else {
+                    feedItems.push({ _type: 'appointment', id: doc.id, ...data });
+                }
+            });
+        }
 
-        appointments.sort((a, b) => {
+        // 2. Fetch Medical Records (Logs)
+        if (currentCompositeId) {
+            const logsQuery = query(collection(db, "patients", currentCompositeId, "logs"));
+            const logsSnap = await getDocs(logsQuery).catch(err => {
+                console.error("Logs fetch error:", err);
+            });
+            if (logsSnap && !logsSnap.empty) {
+                logsSnap.forEach(doc => {
+                    feedItems.push({ _type: 'log', id: doc.id, ...doc.data() });
+                });
+            }
+        }
+
+        // 3. Sort globally by timestamp descending
+        feedItems.sort((a, b) => {
             const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
             const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
             return timeB - timeA;
         });
 
-        if (appointments.length === 0) {
-            list.innerHTML = `
-                <div class="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
-                    <span aria-hidden="true" class="material-icons-round text-slate-200 text-6xl mb-4">event_busy</span>
-                    <h3 class="text-xl font-bold text-slate-800 mb-2">No Past Records Found</h3>
-                    <p class="text-slate-500 max-w-sm mx-auto">When you book sessions at the clinic, your unified schedule will appear here. Start your journey today.</p>
+        if (feedItems.length === 0) {
+            feed.innerHTML = `
+                <div class="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 flex flex-col items-center relative -left-4 shadow-sm">
+                    <span aria-hidden="true" class="material-icons-round text-slate-200 text-6xl mb-4">timeline</span>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">No Records Found</h3>
+                    <p class="text-slate-500 max-w-sm mx-auto">When your session is completed, your unified timeline, prescriptions, and notes will appear here.</p>
                 </div>
             `;
             return;
         }
         
         let html = '';
-        appointments.forEach(apt => {
-            const isAddressed = apt.status === 'addressed';
-            const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
-            const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
-            
-            let gcalBtn = '';
-            if (apt.date) {
-                const dateStr = apt.date.replace(/-/g, '');
-                const nextDayDate = new Date(new Date(apt.date).getTime() + 86400000);
-                const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
+        let activeRemedySet = false;
+
+        feedItems.forEach(item => {
+            // Case Numbering Generator
+            const dateObj = item.timestamp ? item.timestamp.toDate() : new Date();
+            const yyyymmdd = dateObj.toISOString().split('T')[0].replace(/-/g, '');
+            const shortId = item.id.substring(item.id.length - 4).toUpperCase();
+            const caseId = `HHC-${yyyymmdd}-${shortId}`;
+
+            if (item._type === 'appointment') {
+                const isAddressed = item.status === 'addressed';
+                const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
+                const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
                 
-                const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+K.+Nikhil+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason: ${encodeURIComponent(apt.symptoms || 'General Checkup')}&location=Hope+Homeo+Care,+Mangalagiri`;
+                // Privacy Guard
+                let privateNote = '';
+                if (isAddressed) {
+                    if (item.remedy || item.notes) {
+                        privateNote = `
+                        <div class="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-xl text-teal-900 text-sm">
+                            <p class="font-bold mb-1 flex items-center gap-1"><span class="material-icons-round text-[16px]">health_and_safety</span> Clinical Notes:</p>
+                            <p class="whitespace-pre-wrap">${item.notes || 'Remedy prescribed: ' + (item.remedy || 'Check active dosage.')}</p>
+                        </div>`;
+                    }
+                    
+                    // Set Remedy Card if applicable
+                    if (!activeRemedySet && (item.remedy || item.dosage || item.diet)) {
+                        remedyDetails.innerHTML = `
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-teal-800 text-xl">${item.remedy || '--'}</p></div>
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-teal-800 text-xl">${item.dosage || '--'}</p></div>
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dietary Rules</p><p class="font-bold text-rose-500 text-base leading-snug">${item.diet || 'No specific restrictions'}</p></div>
+                        `;
+                        remedyCard.classList.remove('hidden');
+                        activeRemedySet = true;
+                    }
+                } else {
+                    privateNote = `<div class="mt-4 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide bg-slate-50 p-3 rounded-xl border border-slate-100 w-max">
+                        <span class="material-icons-round text-[14px]">lock</span> Awaiting Doctor's Review for clinical notes
+                    </div>`;
+                }
+
+                html += `
+                    <div class="relative group">
+                        <!-- Timeline Dot -->
+                        <div class="absolute -left-[41px] top-6 w-4 h-4 bg-white border-4 border-slate-200 rounded-full group-hover:border-teal-500 transition-colors z-10 box-content"></div>
+                        
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-default relative overflow-hidden">
+                            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
+                                <div>
+                                    <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                        <span class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">${caseId}</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColor}">${statusText}</span>
+                                    </div>
+                                    <h4 class="font-bold text-slate-800 text-lg mb-1">${item.date || dateObj.toDateString()} at ${item.time || 'N/A'}</h4>
+                                    <p class="text-sm text-slate-600 font-medium">Reason: ${item.symptoms || 'N/A'}</p>
+                                </div>
+                                <button onclick="window.openInternalBooking()" class="shrink-0 text-teal-600 bg-teal-50 hover:bg-teal-600 hover:text-white border border-teal-100 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1 w-max h-max">
+                                    <span class="material-icons-round text-[16px]">event_repeat</span> Follow-up
+                                </button>
+                            </div>
+                            ${privateNote}
+                        </div>
+                    </div>
+                `;
+            } else if (item._type === 'log') {
+                // Thread Response Log
+                const imageHtml = item.attachment ? `<div class="mt-4"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Attached Prescription</p><img src="${item.attachment}" class="rounded-xl border border-slate-200 w-full object-contain max-h-[400px] shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${item.attachment}')" title="Click to view full image"></div>` : '';
                 
-                gcalBtn = `
-                    <a href="${gcalUrl}" target="_blank" class="mt-4 md:mt-0 inline-flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium py-2 px-4 rounded-lg transition-colors text-sm shrink-0">
-                        <span aria-hidden="true" class="material-icons-round text-[16px]">event</span> Add to Calendar
-                    </a>
+                // Fallback active remedy
+                if (!activeRemedySet && (item.remedy || item.dosage || item.diet)) {
+                    remedyDetails.innerHTML = `
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-teal-800 text-xl">${item.remedy || '--'}</p></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-teal-800 text-xl">${item.dosage || '--'}</p></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dietary Rules</p><p class="font-bold text-rose-500 text-base leading-snug">${item.diet || 'No specific restrictions'}</p></div>
+                    `;
+                    remedyCard.classList.remove('hidden');
+                    activeRemedySet = true;
+                }
+
+                html += `
+                    <div class="relative ml-8 group">
+                        <!-- Thread connecting line -->
+                        <div class="absolute -left-[30px] top-8 w-6 h-px bg-slate-300 group-hover:bg-teal-300 transition-colors"></div>
+                        <!-- Thread Dot -->
+                        <div class="absolute -left-[33px] top-[29px] w-1.5 h-1.5 bg-slate-400 rounded-full box-content border-[3px] border-slate-50 group-hover:bg-teal-400 transition-colors z-10"></div>
+                        
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group-hover:border-teal-300 transition-colors">
+                            <div class="absolute left-0 top-0 w-1.5 h-full bg-teal-400"></div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-round text-teal-500 text-[18px]">speaker_notes</span>
+                                <p class="text-[10px] font-bold text-teal-700 uppercase tracking-widest">${item.dateStr || dateObj.toDateString()} • ${item.author || 'Dr. K. Nikhil Joshua'}</p>
+                                <span class="ml-auto text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">${caseId}</span>
+                            </div>
+                            <p class="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm font-medium">${item.text}</p>
+                            ${imageHtml}
+                        </div>
+                    </div>
                 `;
             }
-
-            html += `
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-teal-300 transition-colors cursor-default">
-                    <div>
-                        <div class="flex items-center gap-3 mb-1">
-                            <h4 class="font-bold text-slate-800">${apt.date}</h4>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColor}">${statusText}</span>
-                        </div>
-                        <p class="text-sm text-slate-500 line-clamp-1">Reason: ${apt.symptoms || 'N/A'}</p>
-                    </div>
-                    ${gcalBtn}
-                </div>
-            `;
         });
-        list.innerHTML = html;
+
+        feed.innerHTML = html;
+
     } catch (e) {
-        console.error("Firestore error in loadAppointments:", e);
-        list.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to sync data.</p><p class="text-sm opacity-80">Check your internet and try again.</p></div>';
+        console.error("Firestore error in loadClinicalFeed:", e);
+        feed.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center relative -left-4"><p class="font-bold">Failed to sync feed.</p><p class="text-sm opacity-80">Check your internet and try again.</p></div>';
     }
 };
 
@@ -404,79 +449,10 @@ const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fad
                 renderPills(dateInput.value);
             }
         } catch (err) {
-            // Graceful degrade
             console.error("Failed to fetch slots calendar data:", err); 
         }
     };
     fetchSlots();
-};
-
-const loadMedicalRecords = async () => {
-    const list = document.getElementById('records-list');
-    if (!list) return;
-
-    if (!currentCompositeId) {
-        console.warn("Attempted to load records without a valid composite ID.");
-        list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No medical records found. The clinic will update this after your visit.</p></div>';
-        return;
-    }
-
-    list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
-    try {
-        const q = query(collection(db, "patients", currentCompositeId, "logs"), orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-            list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No prescriptions or records on file yet.</p></div>';
-            return;
-        }
-        let html = '';
-        snapshot.forEach(doc => {
-            const log = doc.data();
-            const imageHtml = log.attachment ? `<div class="mt-4"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Attached Prescription</p><img src="${log.attachment}" class="rounded-xl border border-slate-200 w-full object-contain max-h-[600px] shadow-sm"></div>` : '';
-            html += `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                    <div class="absolute left-0 top-0 w-1.5 h-full bg-teal-500"></div>
-                    <p class="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">${log.dateStr || 'Recent'} • ${log.author || 'Clinic'}</p>
-                    <p class="text-slate-800 whitespace-pre-wrap leading-relaxed">${log.text}</p>
-                    ${imageHtml}
-                </div>
-            `;
-        });
-        list.innerHTML = `<div class="border-l-2 border-slate-100 ml-4 pl-6 space-y-6 py-2">${html}</div>`;
-    } catch (err) {
-        console.error("Records query failed:", err);
-        list.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to load records.</p><p class="text-sm opacity-80">Please check your connection.</p></div>';
-    }
-};
-
-const loadProfileDetails = async () => {
-    const container = document.getElementById('profile-details');
-    if (!container || !currentCompositeId) return;
-    container.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching profile details...</p>';
-    try {
-        const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
-        if (docSnap.exists()) {
-            const p = docSnap.data();
-            container.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Full Name</p><p class="font-bold text-slate-800 text-lg">${p.name}</p></div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Registered Phone</p><p class="font-bold text-slate-800 text-lg">+91 ${p.phone}</p></div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Age / Gender</p><p class="font-bold text-slate-800 text-lg">${p.age || '--'} / ${p.gender || '--'}</p></div>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Blood Group</p><p class="font-bold text-rose-500 text-lg">${p.bloodGroup || 'Not specified'}</p></div>
-                </div>
-                <div class="bg-teal-50 border border-teal-100 rounded-xl p-4 flex gap-3 text-teal-800 text-sm">
-                    <span aria-hidden="true" class="material-icons-round">info</span>
-                    <p><strong>Medical Record Integrity:</strong> To ensure clinical safety, core medical identifiers and contact numbers cannot be edited online. Please contact the clinic directly to request updates to your profile.</p>
-                </div>
-            `;
-        } else {
-             container.innerHTML = '<p class="text-slate-500">Profile data missing.</p>';
-        }
-    } catch (err) {
-        console.error("Profile details load error:", err);
-        container.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to load profile.</p></div>';
-    }
 };
 
 // Accessibility Hotkeys
@@ -495,14 +471,9 @@ document.addEventListener('keydown', (e) => {
 
     // Alt Modifiers
     if (e.altKey && auth.currentUser && currentCompositeId) {
-        switch(e.key.toLowerCase()) {
-            case '1': e.preventDefault(); document.getElementById('tab-dashboard')?.click(); break;
-            case '2': e.preventDefault(); document.getElementById('tab-records')?.click(); break;
-            case '3': e.preventDefault(); document.getElementById('tab-profile')?.click(); break;
-            case 'b': 
-                e.preventDefault(); 
-                if (typeof window.openInternalBooking === 'function') window.openInternalBooking();
-                break;
+        if (e.key.toLowerCase() === 'b') {
+            e.preventDefault(); 
+            if (typeof window.openInternalBooking === 'function') window.openInternalBooking();
         }
     }
 });
