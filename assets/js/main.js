@@ -52,72 +52,81 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fadeId) => {
-        const morningSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
-        const eveningSlots = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
+    const applyDynamicValidation = (dateInputId, hiddenInputId) => {
+        const morningRange = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM"];
+        const afternoonRange = ["12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
+        const eveningRange = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
         
         const dateInput = document.getElementById(dateInputId);
-        const container = document.getElementById(timeContainerId);
         const hiddenInput = document.getElementById(hiddenInputId);
-        const fade = document.getElementById(fadeId);
         let fp = null;
-        let blockedSlots = []; // State Fix: Declared to prevent ReferenceError
+        let blockedSlots = [];
 
-        if (!dateInput || !container || !hiddenInput) return;
+        if (!dateInput || !hiddenInput) return;
 
         const renderPills = (dateStr) => {
-            const allSlots = [...morningSlots, ...eveningSlots];
-            let html = '';
-            
-            allSlots.forEach(slot => {
-                const isMorning = morningSlots.includes(slot);
-                const isEvening = eveningSlots.includes(slot);
-                
-                let isBlocked = false;
-                if (dateStr) {
-                    if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
-                    if (isMorning && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
-                    if (isEvening && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
-                    if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
-                }
+            const mCont = document.getElementById('slots-morning');
+            const aCont = document.getElementById('slots-afternoon');
+            const eCont = document.getElementById('slots-evening');
+            if (!mCont || !aCont || !eCont) return;
 
-                const disabledAttr = isBlocked ? 'disabled' : '';
-                const disabledClass = isBlocked ? 'opacity-30 cursor-not-allowed border-slate-100 bg-slate-50 grayscale' : 'hover:border-teal-500 hover:bg-teal-50 border-slate-200 bg-white text-slate-700 cursor-pointer';
-                const activeClass = hiddenInput.value === slot ? 'border-teal-600 bg-teal-600 text-white' : '';
+            // Clear and show Scanning State (Skeleton)
+            const skeleton = `<div class="h-11 bg-slate-100 rounded-xl animate-pulse"></div>`.repeat(3);
+            mCont.innerHTML = skeleton; aCont.innerHTML = skeleton; eCont.innerHTML = skeleton;
 
-                html += `
-                    <button type="button" ${disabledAttr} 
-                        onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${timeContainerId}', '${dateStr}')" 
-                        class="snap-start shrink-0 px-5 py-2.5 rounded-full border-2 font-bold text-xs transition-all ${disabledClass} ${activeClass}">
-                        ${slot}
-                    </button>
-                `;
-            });
-            container.innerHTML = html;
+            // Short timeout to simulate "Scanning Availability..." if date changed
+            setTimeout(() => {
+                const ranges = [
+                    { cont: mCont, slots: morningRange, type: 'Morning' },
+                    { cont: aCont, slots: afternoonRange, type: 'Afternoon' },
+                    { cont: eCont, slots: eveningRange, type: 'Evening' }
+                ];
 
-            // Handle fade logic
-            container.onscroll = () => {
-                if (container.scrollWidth - container.scrollLeft <= container.clientWidth + 20) {
-                    fade.style.opacity = '0';
-                } else {
-                    fade.style.opacity = '1';
-                }
-            };
+                ranges.forEach(range => {
+                    let html = '';
+                    range.slots.forEach(slot => {
+                        let isBlocked = false;
+                        if (dateStr) {
+                            if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
+                            if (range.type === 'Morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
+                            if (range.type === 'Evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
+                            if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
+                        }
+
+                        const active = hiddenInput.value === slot;
+                        const chipClass = isBlocked 
+                            ? 'bg-slate-100 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
+                            : (active 
+                                ? 'bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md');
+
+                        html += `
+                            <button type="button" 
+                                ${isBlocked ? 'disabled' : ''}
+                                onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${dateStr}')" 
+                                class="h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time ${chipClass}">
+                                ${slot}
+                            </button>
+                        `;
+                    });
+                    range.cont.innerHTML = html || `<p class="col-span-3 text-[10px] text-slate-400 text-center py-2">No slots available</p>`;
+                });
+            }, 300);
         };
 
-        window.selectTimeSlot = (slot, inputId, contId, dateStr) => {
+        window.selectTimeSlot = (slot, inputId, dateStr) => {
             const input = document.getElementById(inputId);
             input.value = slot;
-            // Immediate UI update without full re-render for performance
-            document.querySelectorAll(`#${contId} button`).forEach(btn => {
-                btn.classList.remove('border-teal-600', 'bg-teal-600', 'text-white');
+            // Immediate style update for all chips in the grid
+            document.querySelectorAll(`.chip-time`).forEach(btn => {
                 if (btn.innerText.trim() === slot) {
-                    btn.classList.add('border-teal-600', 'bg-teal-600', 'text-white');
+                    btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200";
+                } else if (!btn.disabled) {
+                    btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md";
                 }
             });
         };
 
-        // Initial render (empty/today)
         renderPills();
 
         if (typeof flatpickr !== 'undefined') {
@@ -128,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 static: true,
                 disableMobile: "true",
                 onChange: (selectedDates, dateStr) => {
-                    hiddenInput.value = ""; // Clear selection on date change
+                    hiddenInput.value = "";
                     renderPills(dateStr);
                 }
             });
@@ -136,10 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fetchSlots = async () => {
             try {
-                const docSnap = await getDoc(doc(db, "settings", "calendar")).catch(err => {
-                    console.error("Failed to fetch slots:", err);
-                    throw err;
-                });
+                const docSnap = await getDoc(doc(db, "settings", "calendar"));
                 if (docSnap.exists() && docSnap.data().blockedSlots) {
                     blockedSlots = docSnap.data().blockedSlots;
                     if (fp) fp.redraw();
@@ -152,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchSlots();
     };
 
-    applyDynamicValidation('patient-date', 'time-slots-container', 'patient-time', 'time-scroll-fade');
+    applyDynamicValidation('patient-date', 'patient-time');
 
     const modal = document.getElementById('booking-modal');
     if (!modal) return;

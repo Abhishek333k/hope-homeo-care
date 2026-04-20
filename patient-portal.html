@@ -128,11 +128,35 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Preferred Time Slot</label>
-                    <div class="relative group">
+                    <div class="grid grid-cols-1 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <input type="hidden" id="int-book-time" required>
-                        <div id="int-time-slots-container" class="flex gap-x-2 overflow-x-auto hide-scrollbar snap-x px-0.5 py-0.5 scroll-smooth">
+                        
+                        <!-- Morning -->
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-2 text-slate-600">
+                                <span class="material-icons-round text-amber-500 text-sm">light_mode</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest">Morning</span>
+                            </div>
+                            <div id="slots-morning" class="grid grid-cols-3 gap-2"></div>
                         </div>
-                        <div id="int-time-fade" class="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none transition-opacity duration-300"></div>
+
+                        <!-- Afternoon -->
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-2 text-slate-600">
+                                <span class="material-icons-round text-orange-500 text-sm">wb_sunny</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest">Afternoon</span>
+                            </div>
+                            <div id="slots-afternoon" class="grid grid-cols-3 gap-2"></div>
+                        </div>
+
+                        <!-- Evening -->
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-2 text-slate-600">
+                                <span class="material-icons-round text-indigo-500 text-sm">bedtime</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest">Evening</span>
+                            </div>
+                            <div id="slots-evening" class="grid grid-cols-3 gap-2"></div>
+                        </div>
                     </div>
                 </div>
                 <div>

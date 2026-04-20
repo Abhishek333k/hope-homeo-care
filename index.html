@@ -695,17 +695,41 @@
                     </div>
                     <div class="col-span-1 md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Time Slot</label>
-                    <div class="relative">
+                    <div class="grid grid-cols-1 gap-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <input type="hidden" id="patient-time" required>
-                        <div id="time-slots-container" class="flex gap-x-3 overflow-x-auto hide-scrollbar snap-x px-1 py-1 scroll-smooth">
-                            <!-- Pills will be injected here by JS -->
+                        
+                        <!-- Morning -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 text-slate-600">
+                                <span class="material-icons-round text-amber-500 text-lg">light_mode</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Morning</span>
+                            </div>
+                            <div id="slots-morning" class="grid grid-cols-3 gap-2">
+                                <!-- Skeleton / Chips -->
+                            </div>
                         </div>
-                        <!-- Fading Gradient Edge -->
-                        <div id="time-scroll-fade" class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none transition-opacity duration-300"></div>
-                    </div>
-                    <div class="flex items-center gap-1.5 mt-2.5 text-slate-400">
-                        <span aria-hidden="true" class="material-icons-round text-sm animate-pulse">swipe</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest">Swipe to view more slots</span>
+
+                        <!-- Afternoon -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 text-slate-600">
+                                <span class="material-icons-round text-orange-500 text-lg">wb_sunny</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Afternoon</span>
+                            </div>
+                            <div id="slots-afternoon" class="grid grid-cols-3 gap-2">
+                                <!-- Skeleton / Chips -->
+                            </div>
+                        </div>
+
+                        <!-- Evening -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 text-slate-600">
+                                <span class="material-icons-round text-indigo-500 text-lg">bedtime</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Evening</span>
+                            </div>
+                            <div id="slots-evening" class="grid grid-cols-3 gap-2">
+                                <!-- Skeleton / Chips -->
+                            </div>
+                        </div>
                     </div>
                 </div>
                 </div>
