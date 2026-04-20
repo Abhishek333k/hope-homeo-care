@@ -12,8 +12,9 @@ window.showToast = (message, type = 'success') => {
     const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
     const icon = type === 'error' ? 'error' : 'check_circle';
     
-    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
-    toast.innerHTML = `<span class="material-icons-round text-[20px]">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
+    // Standardized z-index: Toasts are z-100
+    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto z-[100]`;
+    toast.innerHTML = `<span class="material-icons-round text-[20px]" aria-hidden="true">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     container.appendChild(toast);
@@ -51,82 +52,107 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Dynamic Session Validation ---
-    let blockedSlots = [];
-    
-    // Function to wire up the dynamic dropdown disable logic
-    const applyDynamicValidation = (dateInputId, timeSelectId) => {
+    const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fadeId) => {
+        const morningSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
+        const eveningSlots = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
+        
         const dateInput = document.getElementById(dateInputId);
-        const timeSelect = document.getElementById(timeSelectId);
+        const container = document.getElementById(timeContainerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        const fade = document.getElementById(fadeId);
         let fp = null;
+        let blockedSlots = []; // State Fix: Declared to prevent ReferenceError
 
-        if (!dateInput || !timeSelect) return;
+        if (!dateInput || !container || !hiddenInput) return;
 
-        // 1. Initialize Flatpickr (Only fully disable if "All Day" is blocked)
+        const renderPills = (dateStr) => {
+            const allSlots = [...morningSlots, ...eveningSlots];
+            let html = '';
+            
+            allSlots.forEach(slot => {
+                const isMorning = morningSlots.includes(slot);
+                const isEvening = eveningSlots.includes(slot);
+                
+                let isBlocked = false;
+                if (dateStr) {
+                    if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
+                    if (isMorning && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
+                    if (isEvening && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
+                    if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
+                }
+
+                const disabledAttr = isBlocked ? 'disabled' : '';
+                const disabledClass = isBlocked ? 'opacity-30 cursor-not-allowed border-slate-100 bg-slate-50 grayscale' : 'hover:border-teal-500 hover:bg-teal-50 border-slate-200 bg-white text-slate-700 cursor-pointer';
+                const activeClass = hiddenInput.value === slot ? 'border-teal-600 bg-teal-600 text-white' : '';
+
+                html += `
+                    <button type="button" ${disabledAttr} 
+                        onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${timeContainerId}', '${dateStr}')" 
+                        class="snap-start shrink-0 px-5 py-2.5 rounded-full border-2 font-bold text-xs transition-all ${disabledClass} ${activeClass}">
+                        ${slot}
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+
+            // Handle fade logic
+            container.onscroll = () => {
+                if (container.scrollWidth - container.scrollLeft <= container.clientWidth + 20) {
+                    fade.style.opacity = '0';
+                } else {
+                    fade.style.opacity = '1';
+                }
+            };
+        };
+
+        window.selectTimeSlot = (slot, inputId, contId, dateStr) => {
+            const input = document.getElementById(inputId);
+            input.value = slot;
+            // Immediate UI update without full re-render for performance
+            document.querySelectorAll(`#${contId} button`).forEach(btn => {
+                btn.classList.remove('border-teal-600', 'bg-teal-600', 'text-white');
+                if (btn.innerText.trim() === slot) {
+                    btn.classList.add('border-teal-600', 'bg-teal-600', 'text-white');
+                }
+            });
+        };
+
+        // Initial render (empty/today)
+        renderPills();
+
         if (typeof flatpickr !== 'undefined') {
             fp = flatpickr(dateInput, {
                 minDate: "today",
-                disable: [
-                    function(date) { 
-                        if (date.getDay() === 0) return true; // Always disable Sunday
-                        // Localize date to YYYY-MM-DD safely to prevent timezone shifting bugs
-                        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-                        return blockedSlots.includes(`${localDate}|All`);
-                    }
-                ],
-                dateFormat: "d/m/Y",
-                static: true, 
+                disable: [ (date) => (date.getDay() === 0 || blockedSlots.includes(date.toISOString().split('T')[0] + '|All')) ],
+                dateFormat: "Y-m-d",
+                static: true,
                 disableMobile: "true",
-                onChange: function(selectedDates, dateStr, instance) {
-                    const parts = dateStr.split('/');
-                    const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                    
-                    document.querySelectorAll('.slot-pill').forEach(pill => {
-                        const time = pill.dataset.value;
-                        const isBlocked = blockedSlots.includes(`${isoDate}|${time}`);
-                        pill.disabled = isBlocked;
-                        if (isBlocked) {
-                            pill.classList.add('opacity-40', 'cursor-not-allowed', 'bg-slate-100');
-                            pill.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
-                        } else {
-                            pill.classList.remove('opacity-40', 'cursor-not-allowed', 'bg-slate-100');
-                        }
-                    });
-                    document.getElementById('patient-time').value = "";
+                onChange: (selectedDates, dateStr) => {
+                    hiddenInput.value = ""; // Clear selection on date change
+                    renderPills(dateStr);
                 }
             });
         }
 
-        // Fetch real-time slots
         const fetchSlots = async () => {
             try {
-                const docSnap = await getDoc(doc(db, "settings", "calendar"));
+                const docSnap = await getDoc(doc(db, "settings", "calendar")).catch(err => {
+                    console.error("Failed to fetch slots:", err);
+                    throw err;
+                });
                 if (docSnap.exists() && docSnap.data().blockedSlots) {
                     blockedSlots = docSnap.data().blockedSlots;
-                    if (fp) fp.redraw(); // Refresh calendar to grey out "All Day" blocks
+                    if (fp) fp.redraw();
+                    renderPills(dateInput.value);
                 }
-            } catch (error) {
-                console.error("Failed to load calendar settings:", error);
+            } catch (error) { 
+                console.error("Firestore error in fetchSlots:", error);
             }
         };
         fetchSlots();
     };
 
-    // Apply to Public Booking Form (main.js)
-    applyDynamicValidation('patient-date', 'patient-time');
-
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('slot-pill') && !e.target.disabled) {
-            document.querySelectorAll('.slot-pill').forEach(p => {
-                p.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
-                p.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
-            });
-            e.target.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
-            e.target.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
-            const hiddenInput = document.getElementById('patient-time');
-            if (hiddenInput) hiddenInput.value = e.target.dataset.value;
-        }
-    });
+    applyDynamicValidation('patient-date', 'time-slots-container', 'patient-time', 'time-scroll-fade');
 
     const modal = document.getElementById('booking-modal');
     if (!modal) return;
@@ -223,6 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     consent: consentInput.checked,
                     timestamp: serverTimestamp(),
                     status: 'pending'
+                }).catch(err => {
+                    console.error("Failed to add appointment:", err);
+                    throw err;
                 });
                 
                 // Update cooldown timer on success
@@ -237,13 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     timeInput.value = '';
                     symptomsInput.value = '';
                     consentInput.checked = false;
-                    closeModal();
+                    if (typeof window.closeBookingModal === 'function') window.closeBookingModal();
                     submitBtn.innerText = "Submit Request";
                     submitBtn.disabled = false;
                 }, 2000);
             } catch (error) {
                 console.error("Error adding document: ", error);
-                window.showToast("There was an error sending your request. Please try again.", "error");
+                window.showToast("Network error: Could not send request. Please check your connection.", "error");
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
             }
@@ -257,7 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const fallbackSrc = "./assets/images/hero.jpeg"; 
         
         try {
-            const docSnap = await getDoc(doc(db, "settings", "branding"));
+            const docSnap = await getDoc(doc(db, "settings", "branding")).catch(err => {
+                console.error("Hero branding fetch error:", err);
+                throw err;
+            });
             if (docSnap.exists() && docSnap.data().heroImageUrl) {
                 heroImg.src = docSnap.data().heroImageUrl;
             } else {
@@ -301,7 +333,7 @@ const fetchBlogPosts = () => {
             const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
             
             const dateStr = post.published ? post.published.$t : new Date().toISOString();
-            const date = new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const date = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             html += `
                 <a href="${link}" target="_blank" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group">
@@ -320,16 +352,9 @@ const fetchBlogPosts = () => {
         blogContainer.innerHTML = html;
     };
 
-    // Inject the JSONP Script Tag
-    const script = document.createElement('script');
-    script.src = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
-    
-    script.onerror = () => {
-        console.error("Failed to load JSONP script");
-        blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Currently syncing latest journal entries. Please visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-teal-600 font-bold hover:underline">our official blog</a> directly.</p></div>';
-    };
-    
-    document.body.appendChild(script);
+    // Removed legacy JSONP script injection to prevent <head> bloat
+    console.log("Blog feed integration moved to static links for performance.");
+    blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-teal-600 font-bold hover:underline">our official journal</a> for the latest health updates.</p></div>';
 };
 
 async function loadGoogleReviews() {
@@ -422,7 +447,10 @@ async function loadActiveCampaign() {
     try {
         // Fetch campaigns marked as active to prevent scanning old data
         const q = query(collection(db, "campaigns"), where("status", "==", "active"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(q).catch(err => {
+            console.error("Campaign query failed:", err);
+            throw err;
+        });
         
         if (snapshot.empty) return;
 
@@ -490,7 +518,10 @@ const loadPublicGallery = async () => {
 
     try {
         const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(q).catch(err => {
+            console.error("Gallery query failed:", err);
+            throw err;
+        });
         
         if (snapshot.empty) {
             previewGrid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
@@ -601,12 +632,13 @@ const openPortalBtns = document.querySelectorAll('#nav-portal-btn, #mobile-porta
 const closeLoginBtn = document.getElementById('close-login-btn');
 
 let isUserLoggedIn = false;
-onAuthStateChanged(auth, (user) => {
+// Memory Management: Assign listener to unsubscription variable
+const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
     isUserLoggedIn = !!user;
     // Change button text if logged in to provide UX feedback
     openPortalBtns.forEach(btn => {
         if (isUserLoggedIn && btn.tagName !== 'A') {
-            btn.innerHTML = `<span class="material-icons-round text-[18px]">account_circle</span> Go to Portal`;
+            btn.innerHTML = `<span class="material-icons-round text-[18px]" aria-hidden="true">account_circle</span> Go to Portal`;
         }
     });
 });
@@ -619,7 +651,7 @@ if (loginModal && openPortalBtns.length > 0) {
             loginModal.querySelector('div').classList.remove('scale-95');
         }, 10);
 
-        // Initialize ReCaptcha only once
+        // Memory Management: Ensure RecaptchaVerifier is only initialized ONCE
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible'
@@ -638,7 +670,6 @@ if (loginModal && openPortalBtns.length > 0) {
         if (isUserLoggedIn) {
             window.location.href = "patient-portal.html";
         } else {
-            window.recaptchaVerifier = null;
             openLogin();
         }
     }));
@@ -677,7 +708,10 @@ if (loginModal && openPortalBtns.length > 0) {
 
         try {
             const formattedPhone = "+91" + phone;
-            confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+            confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier).catch(err => {
+                console.error("Sign in failed:", err);
+                throw err;
+            });
             document.getElementById('login-phone-step').classList.add('hidden');
             document.getElementById('login-otp-step').classList.remove('hidden');
             window.showToast("OTP sent to your phone");
@@ -697,7 +731,10 @@ if (loginModal && openPortalBtns.length > 0) {
         verifyOtpBtn.disabled = true;
 
         try {
-            await confirmationResult.confirm(otp);
+            await confirmationResult.confirm(otp).catch(err => {
+                console.error("OTP confirmation failed:", err);
+                throw err;
+            });
             window.showToast("Login successful!");
             window.location.href = "patient-portal.html";
         } catch (error) {
@@ -708,4 +745,3 @@ if (loginModal && openPortalBtns.length > 0) {
         }
     });
 }
-

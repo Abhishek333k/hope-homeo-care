@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
@@ -11,7 +11,8 @@ const firebaseConfig = {
   appId: "1:962992614809:web:8d61d27c8881588c59f708"
 };
 
-const app = initializeApp(firebaseConfig);
+// Refactored initialization to prevent HMR crashes during development/hot-reloading
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -19,3 +20,4 @@ const db = getFirestore(app);
 auth.useDeviceLanguage();
 
 export { app, auth, db };
+
