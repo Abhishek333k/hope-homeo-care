@@ -24,6 +24,16 @@ window.calculateAge = (dobString) => {
     return age > 0 ? age : "--";
 };
 
+window.generateGoogleCalendarLink = (date, symptoms) => {
+    if (!date) return;
+    const dateStr = date.replace(/-/g, '');
+    const nextDayDate = new Date(new Date(date).getTime() + 86400000);
+    const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
+    const detailsUrl = encodeURIComponent(symptoms || 'General Checkup');
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+K.+Nikhil+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason:+${detailsUrl}&location=Hope+Homeo+Care,+Mangalagiri`;
+    window.open(gcalUrl, '_blank');
+};
+
 const loadProfileHeader = async () => {
     const nameEl = document.getElementById('profile-name');
     const memberSinceEl = document.getElementById('profile-member-since');
@@ -70,9 +80,9 @@ const loadProfileHeader = async () => {
             }
 
             pillsEl.innerHTML = `
-                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${genderStyle}">${p.gender || 'Unknown'}</span>
-                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-800 border-none drop-shadow-sm">${ageDisplay}</span>
-                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700 border-none shadow-sm flex items-center gap-1"><span class="material-icons-round text-[12px]">water_drop</span>${p.bloodGroup || '--'}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${genderStyle}">${p.gender || 'Unknown'}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-800 border-none drop-shadow-sm">${ageDisplay}</span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700 border-none shadow-sm flex items-center gap-1"><span class="material-icons-round text-[12px]">water_drop</span>${p.bloodGroup || '--'}</span>
             `;
         } else {
             pillsEl.innerHTML = '<span class="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">Profile Data Incomplete</span>';
@@ -454,17 +464,11 @@ const loadClinicalFeed = async () => {
                 } else {
                     let gcalBtn = '';
                     if (item.date) {
-                        const dateStr = item.date.replace(/-/g, '');
-                        // End date should technically be slightly after, just doing to next day for template simplicity
-                        const nextDayDate = new Date(new Date(item.date).getTime() + 86400000);
-                        const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
-                        const detailsUrl = encodeURIComponent(item.symptoms || 'General Checkup');
-                        const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+K.+Nikhil+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason:+${detailsUrl}&location=Hope+Homeo+Care,+Mangalagiri`;
-                        
+                        const escapedSymptoms = (item.symptoms || 'General Checkup').replace(/'/g, "\\'");
                         gcalBtn = `
-                            <a href="${gcalUrl}" target="_blank" class="shrink-0 text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1">
-                                <span class="material-icons-round text-[14px]">event</span> Add to Calendar
-                            </a>
+                            <button onclick="window.generateGoogleCalendarLink('${item.date}', '${escapedSymptoms}')" class="add-to-calendar-btn shrink-0 text-teal-600 border border-teal-200 hover:bg-teal-50 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1">
+                                <span class="material-icons-round text-[14px]">calendar_add_on</span> Add to Calendar
+                            </button>
                         `;
                     }
 
@@ -501,7 +505,7 @@ const loadClinicalFeed = async () => {
                 `;
             } else if (item._type === 'log') {
                 // Thread Response Log
-                const imageHtml = item.attachment ? `<div class="mt-4"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Attached Prescription</p><img src="${item.attachment}" class="rounded-xl border border-slate-200 w-full object-contain max-h-[400px] shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${item.attachment}')" title="Click to view full image"></div>` : '';
+                const imageHtml = item.attachment ? `<div class="mt-4"><p class="text-xs font-bold text-slate-500 uppercase mb-2">Attached Medical Advice & Guidance</p><img src="${item.attachment}" class="rounded-xl border border-slate-200 w-full object-contain max-h-[400px] shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open('${item.attachment}')" title="Click to view full image"></div>` : '';
                 
                 // Fallback active remedy
                 if (!activeRemedySet && (item.remedy || item.dosage || item.diet)) {
@@ -573,6 +577,11 @@ const loadClinicalFeed = async () => {
                             </div>
                             <p class="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm font-medium">${item.text}</p>
                             ${imageHtml}
+                            <div class="mt-4 pt-3 border-t border-slate-200/60">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1">
+                                    <span class="material-icons-round text-[12px]">info</span> For clinical guidance only. Visit the clinic for physical assessment.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 `;
