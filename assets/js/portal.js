@@ -14,6 +14,50 @@ let currentCleanPhone = null;
 let currentCompositeId = null;
 let currentPatientName = null;
 
+window.velocityFollowUp = (caseId) => {
+    if (typeof window.openInternalBooking === 'function') {
+        window.openInternalBooking();
+        const symptomsInput = document.getElementById('int-book-symptoms');
+        if (symptomsInput) {
+            symptomsInput.value = `Follow-up for previous Case: ${caseId}`;
+        }
+    }
+};
+
+const checkVelocityBanner = () => {
+    const remedyCard = document.getElementById('current-remedy-card');
+    const expiryStr = localStorage.getItem('lastRemedyExpiry');
+    const caseId = localStorage.getItem('lastRemedyCaseId');
+    
+    if (remedyCard && expiryStr && caseId) {
+        const diffHours = (parseInt(expiryStr) - new Date().getTime()) / 3600000;
+        if (diffHours <= 48 && diffHours > -168) {
+            remedyCard.classList.remove('hidden');
+            remedyCard.classList.remove('border-teal-200');
+            remedyCard.classList.add('border-amber-400', 'border-2');
+            
+            let banner = document.getElementById('velocity-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'velocity-banner';
+                banner.className = 'mt-6 bg-amber-50 rounded-xl p-4 border border-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full';
+                banner.innerHTML = `
+                    <p class="text-amber-800 font-bold flex items-center gap-2"><span class="material-icons-round text-amber-500">timer</span> Medicine finishing in 48 hours. Schedule follow-up to maintain progress?</p>
+                    <button onclick="window.velocityFollowUp('${caseId}')" class="shrink-0 bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                        <span class="material-icons-round text-[18px]">event_available</span> Quick Follow-up
+                    </button>
+                `;
+                remedyCard.appendChild(banner);
+            }
+        }
+    }
+};
+
+// Check immediately from localStorage for state persistence
+document.addEventListener('DOMContentLoaded', checkVelocityBanner);
+checkVelocityBanner();
+
+
 // Toast System
 window.showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
@@ -290,6 +334,49 @@ const loadClinicalFeed = async () => {
                         `;
                         remedyCard.classList.remove('hidden');
                         activeRemedySet = true;
+
+                        // Expiry Algorithm & Velocity UI Shift
+                        let durationDays = item.durationDays || item.duration;
+                        if (!durationDays && item.dosage) {
+                            const docMatch = item.dosage.match(/for\s+(\d+)\s+(day|days|wk|wks|week|weeks|month|months)/i);
+                            if (docMatch) {
+                                let amt = parseInt(docMatch[1]);
+                                let unit = docMatch[2].toLowerCase();
+                                if (unit.startsWith('w')) amt *= 7;
+                                else if (unit.startsWith('m')) amt *= 30;
+                                durationDays = amt;
+                            }
+                        }
+                        if (!durationDays) durationDays = 14; // Default standard treatment cycle
+
+                        const expiryDate = new Date(dateObj.getTime() + durationDays * 86400000);
+                        localStorage.setItem('lastRemedyExpiry', expiryDate.getTime().toString());
+                        localStorage.setItem('lastRemedyCaseId', caseId);
+
+                        const diffHours = (expiryDate - new Date()) / 3600000;
+                        if (diffHours <= 48 && diffHours > -168) {
+                            remedyCard.classList.remove('border-teal-200');
+                            remedyCard.classList.add('border-amber-400', 'border-2');
+                            
+                            let banner = document.getElementById('velocity-banner');
+                            if (!banner) {
+                                banner = document.createElement('div');
+                                banner.id = 'velocity-banner';
+                                banner.className = 'mt-6 bg-amber-50 rounded-xl p-4 border border-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full';
+                                banner.innerHTML = `
+                                    <p class="text-amber-800 font-bold flex items-center gap-2"><span class="material-icons-round text-amber-500">timer</span> Medicine finishing in 48 hours. Schedule follow-up to maintain progress?</p>
+                                    <button onclick="window.velocityFollowUp('${caseId}')" class="shrink-0 bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                                        <span class="material-icons-round text-[18px]">event_available</span> Quick Follow-up
+                                    </button>
+                                `;
+                                remedyCard.appendChild(banner);
+                            }
+                        } else {
+                            remedyCard.classList.remove('border-amber-400', 'border-2');
+                            remedyCard.classList.add('border-teal-200');
+                            const banner = document.getElementById('velocity-banner');
+                            if (banner) banner.remove();
+                        }
                     }
                 } else {
                     privateNote = `<div class="mt-4 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide bg-slate-50 p-3 rounded-xl border border-slate-100 w-max">
@@ -333,6 +420,49 @@ const loadClinicalFeed = async () => {
                     `;
                     remedyCard.classList.remove('hidden');
                     activeRemedySet = true;
+
+                    // Expiry Algorithm & Velocity UI Shift (For Logs)
+                    let durationDays = item.durationDays || item.duration;
+                    if (!durationDays && item.dosage) {
+                        const docMatch = item.dosage.match(/for\s+(\d+)\s+(day|days|wk|wks|week|weeks|month|months)/i);
+                        if (docMatch) {
+                            let amt = parseInt(docMatch[1]);
+                            let unit = docMatch[2].toLowerCase();
+                            if (unit.startsWith('w')) amt *= 7;
+                            else if (unit.startsWith('m')) amt *= 30;
+                            durationDays = amt;
+                        }
+                    }
+                    if (!durationDays) durationDays = 14; 
+
+                    const expiryDate = new Date(dateObj.getTime() + durationDays * 86400000);
+                    localStorage.setItem('lastRemedyExpiry', expiryDate.getTime().toString());
+                    localStorage.setItem('lastRemedyCaseId', caseId);
+
+                    const diffHours = (expiryDate - new Date()) / 3600000;
+                    if (diffHours <= 48 && diffHours > -168) {
+                        remedyCard.classList.remove('border-teal-200');
+                        remedyCard.classList.add('border-amber-400', 'border-2');
+                        
+                        let banner = document.getElementById('velocity-banner');
+                        if (!banner) {
+                            banner = document.createElement('div');
+                            banner.id = 'velocity-banner';
+                            banner.className = 'mt-6 bg-amber-50 rounded-xl p-4 border border-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full';
+                            banner.innerHTML = `
+                                <p class="text-amber-800 font-bold flex items-center gap-2"><span class="material-icons-round text-amber-500">timer</span> Medicine finishing in 48 hours. Schedule follow-up to maintain progress?</p>
+                                <button onclick="window.velocityFollowUp('${caseId}')" class="shrink-0 bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 px-6 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                                    <span class="material-icons-round text-[18px]">event_available</span> Quick Follow-up
+                                </button>
+                            `;
+                            remedyCard.appendChild(banner);
+                        }
+                    } else {
+                        remedyCard.classList.remove('border-amber-400', 'border-2');
+                        remedyCard.classList.add('border-teal-200');
+                        const banner = document.getElementById('velocity-banner');
+                        if (banner) banner.remove();
+                    }
                 }
 
                 html += `
