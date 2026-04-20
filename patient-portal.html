@@ -158,9 +158,27 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Time</label>
                     <select id="int-book-time" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500">
-                        <option value="" disabled selected>Select a session...</option>
-                        <option value="Morning Session (10:00 AM - 2:00 PM)">Morning Session (10:00 AM - 2:00 PM)</option>
-                        <option value="Evening Session (5:00 PM - 9:00 PM)">Evening Session (5:00 PM - 9:00 PM)</option>
+                        <option value="" disabled selected>Select a 30-min slot...</option>
+                        <optgroup label="Morning Session">
+                            <option value="10:00 AM">10:00 AM</option>
+                            <option value="10:30 AM">10:30 AM</option>
+                            <option value="11:00 AM">11:00 AM</option>
+                            <option value="11:30 AM">11:30 AM</option>
+                            <option value="12:00 PM">12:00 PM</option>
+                            <option value="12:30 PM">12:30 PM</option>
+                            <option value="1:00 PM">1:00 PM</option>
+                            <option value="1:30 PM">1:30 PM</option>
+                        </optgroup>
+                        <optgroup label="Evening Session">
+                            <option value="5:00 PM">5:00 PM</option>
+                            <option value="5:30 PM">5:30 PM</option>
+                            <option value="6:00 PM">6:00 PM</option>
+                            <option value="6:30 PM">6:30 PM</option>
+                            <option value="7:00 PM">7:00 PM</option>
+                            <option value="7:30 PM">7:30 PM</option>
+                            <option value="8:00 PM">8:00 PM</option>
+                            <option value="8:30 PM">8:30 PM</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div>

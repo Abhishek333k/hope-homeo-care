@@ -279,12 +279,16 @@ const applyDynamicValidation = (dateInputId, timeSelectId) => {
                 });
 
                 if (blockedSlots.includes(`${dateStr}|Morning`)) {
-                    const opt = Array.from(timeSelect.options).find(o => o.value.includes('Morning'));
-                    if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                    timeSelect.querySelectorAll('optgroup[label*="Morning"] option').forEach(opt => {
+                        opt.disabled = true;
+                        if (!opt.text.includes('(Unavailable)')) opt.text += ' (Unavailable)';
+                    });
                 }
                 if (blockedSlots.includes(`${dateStr}|Evening`)) {
-                    const opt = Array.from(timeSelect.options).find(o => o.value.includes('Evening'));
-                    if (opt) { opt.disabled = true; opt.text += ' (Unavailable)'; }
+                    timeSelect.querySelectorAll('optgroup[label*="Evening"] option').forEach(opt => {
+                        opt.disabled = true;
+                        if (!opt.text.includes('(Unavailable)')) opt.text += ' (Unavailable)';
+                    });
                 }
                 
                 if (timeSelect.options[timeSelect.selectedIndex]?.disabled) {
