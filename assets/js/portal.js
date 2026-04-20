@@ -21,7 +21,6 @@ window.showToast = (message, type = 'success') => {
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
     const icon = type === 'error' ? 'error' : 'check_circle';
-    // Standardized z-index: Toasts are z-100
     toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto z-[100]`;
     toast.innerHTML = `<span class="material-icons-round text-[20px]" aria-hidden="true">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
     toast.setAttribute('role', 'alert');
@@ -41,7 +40,6 @@ const setupTabs = () => {
         const tabEl = document.getElementById(`tab-${tab}`);
         if (!tabEl) return;
         
-        // Remove existing listeners by cloning if necessary (standard practice for "Setup" functions called multiple times)
         const newTabEl = tabEl.cloneNode(true);
         tabEl.parentNode.replaceChild(newTabEl, tabEl);
         
@@ -74,12 +72,9 @@ const setupTabs = () => {
 };
 
 // Auth & Family Selector Logic
-// ALL PAGE INITIALIZATION IS WRAPPED IN THE LISTENER
 const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-    // SECURITY GATE: Resolve authentication state
     if (user) {
         if (!user.phoneNumber) {
-            // Case: Admin logged in with Google trying to access Patient Portal
             console.warn("Unauthorized Access: Patient Portal requires Phone Auth. Found:", user.email);
             window.showToast("Please login using your Mobile Number to access the portal.", "error");
             setTimeout(() => {
@@ -88,28 +83,28 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
             return;
         }
 
-        // Hydration: Sanitization & UI State
         currentCleanPhone = window.sanitizePhone(user.phoneNumber);
         document.getElementById('logout-btn')?.classList.remove('hidden');
         
         try {
-            const phoneFormats = [currentCleanPhone, user.phoneNumber];
-            const q = query(collection(db, "patients"), where("phone", "in", phoneFormats));
-            const snapshot = await getDocs(q).catch(err => {
-                console.error("Firestore Registry Error:", err);
-                throw err;
-            });
+            // SEQUENTIAL FETCH ENGINE (No 'in' queries)
+            const rawPhoneQuery = query(collection(db, "patients"), where("phone", "==", user.phoneNumber));
+            let snapshot = await getDocs(rawPhoneQuery);
+            
+            // Fallback
+            if (snapshot.empty) {
+                console.log("No exact match. Trying sanitized fallback...");
+                const cleanPhoneQuery = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
+                snapshot = await getDocs(cleanPhoneQuery);
+            }
             
             if (snapshot.empty) {
-                // New Patient Flow
                 console.log("No existing profile found for:", currentCleanPhone);
                 window.selectProfile(null, currentCleanPhone);
             } else if (snapshot.size === 1) {
-                // Single Profile Match
                 let pName = snapshot.docs[0].data().name;
                 window.selectProfile(pName, currentCleanPhone);
             } else {
-                // Multi-Profile (Family) Selector
                 const container = document.getElementById('family-profiles-container');
                 let html = '';
                 snapshot.forEach(doc => {
@@ -129,18 +124,23 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                 document.getElementById('portal-nav').classList.add('hidden');
             }
         } catch (err) {
-            console.error("Sync Failure:", err);
-            window.showToast("Profile synchronization failed. Checking connection...", "error");
-            setTimeout(() => window.location.replace('index.html'), 3000);
+            console.error("Firestore Registry Error - Details:", err);
+            // Graceful degrade - DO NOT REDIRECT
+            const container = document.getElementById('family-profiles-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-rose-50 border border-rose-200 p-6 rounded-2xl text-rose-600">
+                        <p class="font-bold">Could not load profiles.</p>
+                        <p class="text-sm">Please refresh the page to try again.</p>
+                    </div>`;
+                document.getElementById('profile-selector-view').classList.remove('hidden');
+            }
         }
 
-        // --- PAGE INITIALIZATION (ONLY CALLED IF LOGGED IN) ---
         applyDynamicValidation('int-book-date', 'int-time-slots-container', 'int-book-time', 'int-time-fade');
         
-        // Add form listener for booking
         const bookingForm = document.getElementById('internal-booking-form');
         if (bookingForm) {
-            // Remove existing listener if any to avoid duplicates on re-auth
             const newBookingForm = bookingForm.cloneNode(true);
             bookingForm.parentNode.replaceChild(newBookingForm, bookingForm);
             
@@ -159,9 +159,6 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                         consent: true,
                         status: "pending",
                         timestamp: serverTimestamp()
-                    }).catch(err => {
-                        console.error("Internal booking failed:", err);
-                        throw err;
                     });
                     
                     window.showToast("Appointment requested successfully!");
@@ -169,15 +166,14 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     document.getElementById('internal-booking-form').reset();
                     loadAppointments();
                 } catch(err) {
-                    console.error(err);
-                    window.showToast("Failed to book appointment.", "error");
+                    console.error("Internal booking failed:", err);
+                    window.showToast("Failed to book appointment. Please check your connection.", "error");
                 } finally {
                     btn.innerText = "Submit Request"; btn.disabled = false;
                 }
             });
         }
         
-        // Add Logout Listener
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             const newLogoutBtn = logoutBtn.cloneNode(true);
@@ -187,7 +183,6 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     newLogoutBtn.innerText = "Logging out...";
                     newLogoutBtn.disabled = true;
                     
-                    // Eradicate global state leakage before signing out
                     currentCleanPhone = null;
                     currentPatientName = null;
                     currentCompositeId = null;
@@ -201,7 +196,6 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
         }
 
     } else {
-        // Cold Start / Unauthorized: Guarded Redirect
         // ONLY redirect here, after Firebase explicitly confirms no user exists
         console.log("No active session found. Redirecting to login...");
         currentCleanPhone = null;
@@ -220,21 +214,17 @@ window.selectProfile = (name, phone) => {
     document.getElementById('portal-nav').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
     
-    // Unhide Switch Profile button
     document.getElementById('switch-profile-btn')?.classList.remove('hidden');
 
     setupTabs();
     loadAppointments();
 };
 
-// Switch Profile Event Listener
 document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
-    // Hide all main views
     ['portal-nav', 'dashboard-view', 'view-records', 'view-profile'].forEach(id => {
         document.getElementById(id)?.classList.add('hidden');
     });
     
-    // Reset selection and show selector
     currentCompositeId = null;
     currentPatientName = null;
     document.getElementById('profile-selector-view').classList.remove('hidden');
@@ -246,15 +236,19 @@ const loadAppointments = async () => {
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Syncing your schedule...</p>';
     
     try {
-        const phoneFormats = [currentCleanPhone];
         const user = auth.currentUser;
-        if (user?.phoneNumber) phoneFormats.push(user.phoneNumber);
-
-        const q = query(collection(db, "appointments"), where("phone", "in", phoneFormats));
-        const snapshot = await getDocs(q).catch(err => {
-            console.error("Firestore error in loadAppointments:", err);
-            throw err;
-        });
+        
+        // SEQUENTIAL FETCH ENGINE
+        let snapshot;
+        if (user && user.phoneNumber) {
+            const rawPhoneQuery = query(collection(db, "appointments"), where("phone", "==", user.phoneNumber));
+            snapshot = await getDocs(rawPhoneQuery);
+        }
+        
+        if (!snapshot || snapshot.empty) {
+            const cleanPhoneQuery = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+            snapshot = await getDocs(cleanPhoneQuery);
+        }
         
         let appointments = [];
         snapshot.forEach(doc => {
@@ -275,7 +269,6 @@ const loadAppointments = async () => {
         });
 
         if (appointments.length === 0) {
-            // Enhanced Empty State UI
             list.innerHTML = `
                 <div class="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
                     <span aria-hidden="true" class="material-icons-round text-slate-200 text-6xl mb-4">event_busy</span>
@@ -292,7 +285,6 @@ const loadAppointments = async () => {
             const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
             const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
             
-            // Generate Google Calendar Link (Stateless)
             let gcalBtn = '';
             if (apt.date) {
                 const dateStr = apt.date.replace(/-/g, '');
@@ -323,7 +315,7 @@ const loadAppointments = async () => {
         });
         list.innerHTML = html;
     } catch (e) {
-        console.error("App Listing Error:", e);
+        console.error("Firestore error in loadAppointments:", e);
         list.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to sync data.</p><p class="text-sm opacity-80">Check your internet and try again.</p></div>';
     }
 };
@@ -353,7 +345,7 @@ const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fad
     const hiddenInput = document.getElementById(hiddenInputId);
     const fade = document.getElementById(fadeId);
     let fp = null;
-    let blockedSlots = []; // State Fix: Explicitly declared
+    let blockedSlots = []; 
 
     if (!dateInput || !container || !hiddenInput) return;
 
@@ -405,16 +397,16 @@ const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fad
 
     const fetchSlots = async () => {
         try {
-            const docSnap = await getDoc(doc(db, "settings", "calendar")).catch(err => {
-                console.error("Failed to fetch slots:", err);
-                throw err;
-            });
+            const docSnap = await getDoc(doc(db, "settings", "calendar"));
             if (docSnap.exists() && docSnap.data().blockedSlots) {
                 blockedSlots = docSnap.data().blockedSlots;
                 if (fp) fp.redraw();
                 renderPills(dateInput.value);
             }
-        } catch (e) { console.error("Slots fetch error:", e); }
+        } catch (err) {
+            // Graceful degrade
+            console.error("Failed to fetch slots calendar data:", err); 
+        }
     };
     fetchSlots();
 };
@@ -432,10 +424,7 @@ const loadMedicalRecords = async () => {
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
     try {
         const q = query(collection(db, "patients", currentCompositeId, "logs"), orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q).catch(err => {
-            console.error("Records query failed:", err);
-            throw err;
-        });
+        const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
             list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No prescriptions or records on file yet.</p></div>';
@@ -455,20 +444,18 @@ const loadMedicalRecords = async () => {
             `;
         });
         list.innerHTML = `<div class="border-l-2 border-slate-100 ml-4 pl-6 space-y-6 py-2">${html}</div>`;
-    } catch (e) {
-        console.error(e);
-        list.innerHTML = '<p class="text-rose-500">Failed to load records.</p>';
+    } catch (err) {
+        console.error("Records query failed:", err);
+        list.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to load records.</p><p class="text-sm opacity-80">Please check your connection.</p></div>';
     }
 };
 
 const loadProfileDetails = async () => {
     const container = document.getElementById('profile-details');
     if (!container || !currentCompositeId) return;
+    container.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching profile details...</p>';
     try {
-        const docSnap = await getDoc(doc(db, "patients", currentCompositeId)).catch(err => {
-            console.error("Profile fetch failed:", err);
-            throw err;
-        });
+        const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
         if (docSnap.exists()) {
             const p = docSnap.data();
             container.innerHTML = `
@@ -483,9 +470,12 @@ const loadProfileDetails = async () => {
                     <p><strong>Medical Record Integrity:</strong> To ensure clinical safety, core medical identifiers and contact numbers cannot be edited online. Please contact the clinic directly to request updates to your profile.</p>
                 </div>
             `;
+        } else {
+             container.innerHTML = '<p class="text-slate-500">Profile data missing.</p>';
         }
-    } catch (e) {
-        console.error("Profile details load error:", e);
+    } catch (err) {
+        console.error("Profile details load error:", err);
+        container.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to load profile.</p></div>';
     }
 };
 
@@ -497,13 +487,13 @@ document.addEventListener('keydown', (e) => {
         if (intModal && !intModal.classList.contains('hidden')) {
             window.closeInternalBooking();
         }
-        // Escape to close family selector (if they changed their mind)
+        // Escape to close family selector
         if (currentCompositeId && !document.getElementById('profile-selector-view').classList.contains('hidden')) {
-            window.selectProfile(currentPatientName, currentCleanPhone); // Reverts to last selected
+            window.selectProfile(currentPatientName, currentCleanPhone); 
         }
     }
 
-    // Alt Modifiers for Logged-In Users
+    // Alt Modifiers
     if (e.altKey && auth.currentUser && currentCompositeId) {
         switch(e.key.toLowerCase()) {
             case '1': e.preventDefault(); document.getElementById('tab-dashboard')?.click(); break;
