@@ -21,8 +21,9 @@ window.showToast = (message, type = 'success') => {
     const toast = document.createElement('div');
     const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
     const icon = type === 'error' ? 'error' : 'check_circle';
-    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
-    toast.innerHTML = `<span class="material-icons-round text-[20px]">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
+    // Standardized z-index: Toasts are z-100
+    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto z-[100]`;
+    toast.innerHTML = `<span class="material-icons-round text-[20px]" aria-hidden="true">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     container.appendChild(toast);
@@ -37,7 +38,14 @@ window.showToast = (message, type = 'success') => {
 const setupTabs = () => {
     const tabs = ['dashboard', 'records', 'profile'];
     tabs.forEach(tab => {
-        document.getElementById(`tab-${tab}`)?.addEventListener('click', (e) => {
+        const tabEl = document.getElementById(`tab-${tab}`);
+        if (!tabEl) return;
+        
+        // Remove existing listeners by cloning if necessary (standard practice for "Setup" functions called multiple times)
+        const newTabEl = tabEl.cloneNode(true);
+        tabEl.parentNode.replaceChild(newTabEl, tabEl);
+        
+        newTabEl.addEventListener('click', (e) => {
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 if (btn) {
@@ -56,7 +64,7 @@ const setupTabs = () => {
                 loadAppointments();
             } else if (tab === 'records') {
                 document.getElementById('view-records').classList.remove('hidden');
-                loadMedicalRecords(); // Task 3: Force refresh every click
+                loadMedicalRecords(); 
             } else if (tab === 'profile') {
                 document.getElementById('view-profile').classList.remove('hidden');
                 loadProfileDetails();
@@ -66,34 +74,54 @@ const setupTabs = () => {
 };
 
 // Auth & Family Selector Logic
-onAuthStateChanged(auth, async (user) => {
+// ALL PAGE INITIALIZATION IS WRAPPED IN THE LISTENER
+const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    // SECURITY GATE: Resolve authentication state
     if (user) {
+        if (!user.phoneNumber) {
+            // Case: Admin logged in with Google trying to access Patient Portal
+            console.warn("Unauthorized Access: Patient Portal requires Phone Auth. Found:", user.email);
+            window.showToast("Please login using your Mobile Number to access the portal.", "error");
+            setTimeout(() => {
+                signOut(auth).then(() => window.location.replace('index.html'));
+            }, 2500);
+            return;
+        }
+
+        // Hydration: Sanitization & UI State
         currentCleanPhone = window.sanitizePhone(user.phoneNumber);
         document.getElementById('logout-btn')?.classList.remove('hidden');
         
         try {
-            // SEQUENTIAL ARRAY QUERY: Fixes permission analyzer crashes by handling both formats (+91 and raw)
-            // This bypasses the strict "==" limitation in rules for multi-format phone tokens
-            const phoneFormats = [currentCleanPhone];
-            if (user.phoneNumber) phoneFormats.push(user.phoneNumber);
-            
+            const phoneFormats = [currentCleanPhone, user.phoneNumber];
             const q = query(collection(db, "patients"), where("phone", "in", phoneFormats));
-            const snapshot = await getDocs(q);
+            const snapshot = await getDocs(q).catch(err => {
+                console.error("Firestore Registry Error:", err);
+                throw err;
+            });
             
-            if (snapshot.empty || snapshot.size === 1) {
-                let pName = (!snapshot.empty) ? snapshot.docs[0].data().name : null;
+            if (snapshot.empty) {
+                // New Patient Flow
+                console.log("No existing profile found for:", currentCleanPhone);
+                window.selectProfile(null, currentCleanPhone);
+            } else if (snapshot.size === 1) {
+                // Single Profile Match
+                let pName = snapshot.docs[0].data().name;
                 window.selectProfile(pName, currentCleanPhone);
             } else {
+                // Multi-Profile (Family) Selector
                 const container = document.getElementById('family-profiles-container');
                 let html = '';
                 snapshot.forEach(doc => {
                     const p = doc.data();
                     html += `
-                        <button onclick="window.selectProfile('${p.name}', '${currentCleanPhone}')" class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
-                            <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">${p.name.charAt(0).toUpperCase()}</div>
+                        <button onclick="window.selectProfile('${p.name}', '${currentCleanPhone}')" 
+                            class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 group">
+                            <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                                ${p.name.charAt(0).toUpperCase()}
+                            </div>
                             <span class="font-semibold text-slate-700 truncate w-full text-center leading-tight">${p.name}</span>
-                        </button>
-                    `;
+                        </button>`;
                 });
                 container.innerHTML = html;
                 document.getElementById('profile-selector-view').classList.remove('hidden');
@@ -101,10 +129,84 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById('portal-nav').classList.add('hidden');
             }
         } catch (err) {
-            console.error("Auth process error:", err);
-            window.location.replace('index.html');
+            console.error("Sync Failure:", err);
+            window.showToast("Profile synchronization failed. Checking connection...", "error");
+            setTimeout(() => window.location.replace('index.html'), 3000);
         }
+
+        // --- PAGE INITIALIZATION (ONLY CALLED IF LOGGED IN) ---
+        applyDynamicValidation('int-book-date', 'int-time-slots-container', 'int-book-time', 'int-time-fade');
+        
+        // Add form listener for booking
+        const bookingForm = document.getElementById('internal-booking-form');
+        if (bookingForm) {
+            // Remove existing listener if any to avoid duplicates on re-auth
+            const newBookingForm = bookingForm.cloneNode(true);
+            bookingForm.parentNode.replaceChild(newBookingForm, bookingForm);
+            
+            newBookingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('int-book-submit');
+                btn.innerText = "Submitting..."; btn.disabled = true;
+                
+                try {
+                    await addDoc(collection(db, "appointments"), {
+                        name: currentPatientName || "Unknown",
+                        phone: currentCleanPhone,
+                        date: document.getElementById('int-book-date').value,
+                        time: document.getElementById('int-book-time').value,
+                        symptoms: document.getElementById('int-book-symptoms').value,
+                        consent: true,
+                        status: "pending",
+                        timestamp: serverTimestamp()
+                    }).catch(err => {
+                        console.error("Internal booking failed:", err);
+                        throw err;
+                    });
+                    
+                    window.showToast("Appointment requested successfully!");
+                    window.closeInternalBooking();
+                    document.getElementById('internal-booking-form').reset();
+                    loadAppointments();
+                } catch(err) {
+                    console.error(err);
+                    window.showToast("Failed to book appointment.", "error");
+                } finally {
+                    btn.innerText = "Submit Request"; btn.disabled = false;
+                }
+            });
+        }
+        
+        // Add Logout Listener
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            const newLogoutBtn = logoutBtn.cloneNode(true);
+            logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+            newLogoutBtn.addEventListener('click', () => {
+                if (confirm("Are you sure you want to log out of the Patient Portal?")) {
+                    newLogoutBtn.innerText = "Logging out...";
+                    newLogoutBtn.disabled = true;
+                    
+                    // Eradicate global state leakage before signing out
+                    currentCleanPhone = null;
+                    currentPatientName = null;
+                    currentCompositeId = null;
+                    
+                    signOut(auth).catch(err => {
+                        console.error("Sign out error:", err);
+                        window.location.reload();
+                    });
+                }
+            });
+        }
+
     } else {
+        // Cold Start / Unauthorized: Guarded Redirect
+        // ONLY redirect here, after Firebase explicitly confirms no user exists
+        console.log("No active session found. Redirecting to login...");
+        currentCleanPhone = null;
+        currentPatientName = null;
+        currentCompositeId = null;
         window.location.replace('index.html');
     }
 });
@@ -118,14 +220,14 @@ window.selectProfile = (name, phone) => {
     document.getElementById('portal-nav').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
     
-    // Task 1: Unhide Switch Profile button
+    // Unhide Switch Profile button
     document.getElementById('switch-profile-btn')?.classList.remove('hidden');
 
     setupTabs();
     loadAppointments();
 };
 
-// Task 1: Switch Profile Event Listener
+// Switch Profile Event Listener
 document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
     // Hide all main views
     ['portal-nav', 'dashboard-view', 'view-records', 'view-profile'].forEach(id => {
@@ -149,7 +251,10 @@ const loadAppointments = async () => {
         if (user?.phoneNumber) phoneFormats.push(user.phoneNumber);
 
         const q = query(collection(db, "appointments"), where("phone", "in", phoneFormats));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(q).catch(err => {
+            console.error("Firestore error in loadAppointments:", err);
+            throw err;
+        });
         
         let appointments = [];
         snapshot.forEach(doc => {
@@ -170,7 +275,14 @@ const loadAppointments = async () => {
         });
 
         if (appointments.length === 0) {
-            list.innerHTML = `<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No past appointments found.</p></div>`;
+            // Enhanced Empty State UI
+            list.innerHTML = `
+                <div class="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
+                    <span aria-hidden="true" class="material-icons-round text-slate-200 text-6xl mb-4">event_busy</span>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">No Past Records Found</h3>
+                    <p class="text-slate-500 max-w-sm mx-auto">When you book sessions at the clinic, your unified schedule will appear here. Start your journey today.</p>
+                </div>
+            `;
             return;
         }
         
@@ -183,9 +295,7 @@ const loadAppointments = async () => {
             // Generate Google Calendar Link (Stateless)
             let gcalBtn = '';
             if (apt.date) {
-                // Convert YYYY-MM-DD to YYYYMMDD
                 const dateStr = apt.date.replace(/-/g, '');
-                // Create next day for an "all-day" event format
                 const nextDayDate = new Date(new Date(apt.date).getTime() + 86400000);
                 const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
                 
@@ -193,7 +303,7 @@ const loadAppointments = async () => {
                 
                 gcalBtn = `
                     <a href="${gcalUrl}" target="_blank" class="mt-4 md:mt-0 inline-flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium py-2 px-4 rounded-lg transition-colors text-sm shrink-0">
-                        <span class="material-icons-round text-[16px]">event</span> Add to Calendar
+                        <span aria-hidden="true" class="material-icons-round text-[16px]">event</span> Add to Calendar
                     </a>
                 `;
             }
@@ -213,8 +323,8 @@ const loadAppointments = async () => {
         });
         list.innerHTML = html;
     } catch (e) {
-        console.error(e);
-        list.innerHTML = '<p class="text-rose-500">Failed to sync data.</p>';
+        console.error("App Listing Error:", e);
+        list.innerHTML = '<div class="bg-rose-50 text-rose-600 p-6 rounded-xl border border-rose-100 text-center"><p class="font-bold">Failed to sync data.</p><p class="text-sm opacity-80">Check your internet and try again.</p></div>';
     }
 };
 
@@ -234,15 +344,16 @@ window.closeInternalBooking = () => {
 };
 
 // --- Dynamic Session Validation ---
-const morningSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
-const eveningSlots = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
-
 const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fadeId) => {
+    const morningSlots = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
+    const eveningSlots = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
+    
     const dateInput = document.getElementById(dateInputId);
     const container = document.getElementById(timeContainerId);
     const hiddenInput = document.getElementById(hiddenInputId);
     const fade = document.getElementById(fadeId);
     let fp = null;
+    let blockedSlots = []; // State Fix: Explicitly declared
 
     if (!dateInput || !container || !hiddenInput) return;
 
@@ -284,7 +395,7 @@ const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fad
     if (typeof flatpickr !== 'undefined') {
         fp = flatpickr(dateInput, {
             minDate: "today",
-            disable: [ (date) => (date.getDay() === 0 || blockedSlots.includes(new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0] + '|All')) ],
+            disable: [ (date) => (date.getDay() === 0 || blockedSlots.includes(date.toISOString().split('T')[0] + '|All')) ],
             dateFormat: "Y-m-d",
             static: true,
             disableMobile: "true",
@@ -294,47 +405,19 @@ const applyDynamicValidation = (dateInputId, timeContainerId, hiddenInputId, fad
 
     const fetchSlots = async () => {
         try {
-            const docSnap = await getDoc(doc(db, "settings", "calendar"));
+            const docSnap = await getDoc(doc(db, "settings", "calendar")).catch(err => {
+                console.error("Failed to fetch slots:", err);
+                throw err;
+            });
             if (docSnap.exists() && docSnap.data().blockedSlots) {
                 blockedSlots = docSnap.data().blockedSlots;
                 if (fp) fp.redraw();
                 renderPills(dateInput.value);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Slots fetch error:", e); }
     };
     fetchSlots();
 };
-
-applyDynamicValidation('int-book-date', 'int-time-slots-container', 'int-book-time', 'int-time-fade');
-
-document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('int-book-submit');
-    btn.innerText = "Submitting..."; btn.disabled = true;
-    
-    try {
-        await addDoc(collection(db, "appointments"), {
-            name: currentPatientName || "Unknown",
-            phone: currentCleanPhone,
-            date: document.getElementById('int-book-date').value,
-            time: document.getElementById('int-book-time').value,
-            symptoms: document.getElementById('int-book-symptoms').value,
-            consent: true,
-            status: "pending",
-            timestamp: serverTimestamp()
-        });
-        
-        window.showToast("Appointment requested successfully!");
-        window.closeInternalBooking();
-        document.getElementById('internal-booking-form').reset();
-        loadAppointments();
-    } catch(err) {
-        console.error(err);
-        window.showToast("Failed to book appointment.", "error");
-    } finally {
-        btn.innerText = "Submit Request"; btn.disabled = false;
-    }
-});
 
 const loadMedicalRecords = async () => {
     const list = document.getElementById('records-list');
@@ -349,7 +432,11 @@ const loadMedicalRecords = async () => {
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Fetching medical history...</p>';
     try {
         const q = query(collection(db, "patients", currentCompositeId, "logs"), orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(q).catch(err => {
+            console.error("Records query failed:", err);
+            throw err;
+        });
+        
         if (snapshot.empty) {
             list.innerHTML = '<div class="bg-white p-8 text-center rounded-2xl border border-slate-200"><p class="text-slate-500">No prescriptions or records on file yet.</p></div>';
             return;
@@ -378,7 +465,10 @@ const loadProfileDetails = async () => {
     const container = document.getElementById('profile-details');
     if (!container || !currentCompositeId) return;
     try {
-        const docSnap = await getDoc(doc(db, "patients", currentCompositeId));
+        const docSnap = await getDoc(doc(db, "patients", currentCompositeId)).catch(err => {
+            console.error("Profile fetch failed:", err);
+            throw err;
+        });
         if (docSnap.exists()) {
             const p = docSnap.data();
             container.innerHTML = `
@@ -389,24 +479,15 @@ const loadProfileDetails = async () => {
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Blood Group</p><p class="font-bold text-rose-500 text-lg">${p.bloodGroup || 'Not specified'}</p></div>
                 </div>
                 <div class="bg-teal-50 border border-teal-100 rounded-xl p-4 flex gap-3 text-teal-800 text-sm">
-                    <span class="material-icons-round">info</span>
+                    <span aria-hidden="true" class="material-icons-round">info</span>
                     <p><strong>Medical Record Integrity:</strong> To ensure clinical safety, core medical identifiers and contact numbers cannot be edited online. Please contact the clinic directly to request updates to your profile.</p>
                 </div>
             `;
         }
     } catch (e) {
-        console.error(e);
+        console.error("Profile details load error:", e);
     }
 };
-
-const logoutBtn = document.getElementById('logout-btn');
-logoutBtn?.addEventListener('click', () => {
-    if (confirm("Are you sure you want to log out of the Patient Portal?")) {
-        logoutBtn.innerText = "Logging out...";
-        logoutBtn.disabled = true;
-        signOut(auth);
-    }
-});
 
 // Accessibility Hotkeys
 document.addEventListener('keydown', (e) => {
