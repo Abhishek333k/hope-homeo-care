@@ -627,8 +627,9 @@ if (loginModal && openPortalBtns.length > 0) {
     openPortalBtns.forEach(btn => btn.addEventListener('click', (e) => {
         e.preventDefault();
         if (isUserLoggedIn) {
-            window.location.href = "patient-portal.html"; // Bypass OTP
+            window.location.href = "patient-portal.html";
         } else {
+            window.recaptchaVerifier = null;
             openLogin();
         }
     }));

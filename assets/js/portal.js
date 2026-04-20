@@ -11,6 +11,7 @@ window.sanitizePhone = (rawPhone) => {
 };
 
 let currentCleanPhone = null;
+let currentFullPhone = null;
 let currentCompositeId = null;
 let currentPatientName = null;
 
@@ -69,11 +70,24 @@ const setupTabs = () => {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentCleanPhone = window.sanitizePhone(user.phoneNumber);
+        currentFullPhone = user.phoneNumber;
+        console.log("Auth phone:", user.phoneNumber, "Clean:", currentCleanPhone);
         document.getElementById('logout-btn')?.classList.remove('hidden');
         
         try {
-            const q = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
-            const snapshot = await getDocs(q);
+            console.log("Querying patients with phone:", currentCleanPhone, "or", currentFullPhone);
+            
+            let snapshot;
+            const q1 = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
+            const snap1 = await getDocs(q1);
+            console.log("Patients query (clean):", snap1.size);
+            if (snap1.size > 0) {
+                snapshot = snap1;
+            } else {
+                const q2 = query(collection(db, "patients"), where("phone", "==", currentFullPhone));
+                snapshot = await getDocs(q2);
+                console.log("Patients query (full):", snapshot.size);
+            }
             
             if (snapshot.size === 0 || snapshot.size === 1) {
                 let pName = snapshot.size === 1 ? snapshot.docs[0].data().name : null;
@@ -96,8 +110,16 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById('portal-nav').classList.add('hidden');
             }
         } catch (err) {
-            console.error("Auth process error:", err);
-            window.location.replace('index.html');
+            console.error("Database permission or fetch error:", err);
+            // GRACEFUL FAIL: Instead of kicking them out, show an error state but keep them logged in!
+            window.showToast("Failed to sync profile data. Please refresh the page.", "error");
+            
+            // Give them a fallback empty state so the UI doesn't freeze
+            const appointmentsList = document.getElementById('patient-appointments-list');
+            if (appointmentsList) {
+                appointmentsList.innerHTML = 
+                    '<p class="text-rose-500 bg-rose-50 p-4 rounded-xl">Unable to connect to clinical database. Please check your connection or contact the clinic.</p>';
+            }
         }
     } else {
         window.location.replace('index.html');
@@ -139,8 +161,33 @@ const loadAppointments = async () => {
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Syncing your schedule...</p>';
     
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
-        const snapshot = await getDocs(q);
+        console.log("Querying appointments with:", currentFullPhone, "or", currentCleanPhone);
+        
+        const q1 = query(collection(db, "appointments"), where("phone", "==", currentFullPhone));
+        const snap1 = await getDocs(q1);
+        console.log("Query result (full):", snap1.size);
+        
+        const q2 = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+        const snap2 = await getDocs(q2);
+        console.log("Query result (clean):", snap2.size);
+        
+        const allDocs = [];
+        const seenIds = new Set();
+        
+        snap1.forEach(doc => {
+            if (!seenIds.has(doc.id)) {
+                seenIds.add(doc.id);
+                allDocs.push(doc);
+            }
+        });
+        snap2.forEach(doc => {
+            if (!seenIds.has(doc.id)) {
+                seenIds.add(doc.id);
+                allDocs.push(doc);
+            }
+        });
+        
+        const snapshot = { forEach: (cb) => allDocs.forEach(cb) };
         
         let appointments = [];
         snapshot.forEach(doc => {
@@ -298,7 +345,7 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
     try {
         await addDoc(collection(db, "appointments"), {
             name: currentPatientName || "Unknown",
-            phone: currentCleanPhone,
+            phone: currentFullPhone || ("+91" + currentCleanPhone),
             date: document.getElementById('int-book-date').value,
             time: document.getElementById('int-book-time').value,
             symptoms: document.getElementById('int-book-symptoms').value,
