@@ -11,7 +11,6 @@ window.sanitizePhone = (rawPhone) => {
 };
 
 let currentCleanPhone = null;
-let currentFullPhone = null;
 let currentCompositeId = null;
 let currentPatientName = null;
 
@@ -70,24 +69,13 @@ const setupTabs = () => {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentCleanPhone = window.sanitizePhone(user.phoneNumber);
-        currentFullPhone = user.phoneNumber;
-        console.log("Auth phone:", user.phoneNumber, "Clean:", currentCleanPhone);
+        const fullPhone = "+91" + currentCleanPhone; // Grab both formats
         document.getElementById('logout-btn')?.classList.remove('hidden');
         
         try {
-            console.log("Querying patients with phone:", currentCleanPhone, "or", currentFullPhone);
-            
-            let snapshot;
-            const q1 = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
-            const snap1 = await getDocs(q1);
-            console.log("Patients query (clean):", snap1.size);
-            if (snap1.size > 0) {
-                snapshot = snap1;
-            } else {
-                const q2 = query(collection(db, "patients"), where("phone", "==", currentFullPhone));
-                snapshot = await getDocs(q2);
-                console.log("Patients query (full):", snapshot.size);
-            }
+            // 🎯 THE DATA FIX: Query the DB for BOTH formats using the 'in' operator
+            const q = query(collection(db, "patients"), where("phone", "in", [currentCleanPhone, fullPhone]));
+            const snapshot = await getDocs(q);
             
             if (snapshot.size === 0 || snapshot.size === 1) {
                 let pName = snapshot.size === 1 ? snapshot.docs[0].data().name : null;
@@ -111,14 +99,20 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch (err) {
             console.error("Database permission or fetch error:", err);
-            // GRACEFUL FAIL: Instead of kicking them out, show an error state but keep them logged in!
-            window.showToast("Failed to sync profile data. Please refresh the page.", "error");
+            window.showToast("Security Block: Unable to sync data.", "error");
             
-            // Give them a fallback empty state so the UI doesn't freeze
+            // 🚨 THE UI FIX: Physically remove the 'hidden' classes so the user isn't looking at a white screen
+            document.getElementById('portal-nav')?.classList.remove('hidden');
+            document.getElementById('dashboard-view')?.classList.remove('hidden');
+            
             const appointmentsList = document.getElementById('patient-appointments-list');
             if (appointmentsList) {
                 appointmentsList.innerHTML = 
-                    '<p class="text-rose-500 bg-rose-50 p-4 rounded-xl">Unable to connect to clinical database. Please check your connection or contact the clinic.</p>';
+                    `<div class="bg-rose-50 border border-rose-200 p-8 rounded-2xl text-center shadow-sm">
+                        <span class="material-icons-round text-rose-500 text-5xl mb-3">gpp_bad</span>
+                        <h3 class="text-lg font-bold text-rose-800 mb-2">Access Denied</h3>
+                        <p class="text-rose-600">The database security rules blocked this connection. Please verify your Firebase Rules.</p>
+                    </div>`;
             }
         }
     } else {
@@ -161,33 +155,10 @@ const loadAppointments = async () => {
     list.innerHTML = '<p class="text-slate-500 animate-pulse">Syncing your schedule...</p>';
     
     try {
-        console.log("Querying appointments with:", currentFullPhone, "or", currentCleanPhone);
-        
-        const q1 = query(collection(db, "appointments"), where("phone", "==", currentFullPhone));
-        const snap1 = await getDocs(q1);
-        console.log("Query result (full):", snap1.size);
-        
-        const q2 = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
-        const snap2 = await getDocs(q2);
-        console.log("Query result (clean):", snap2.size);
-        
-        const allDocs = [];
-        const seenIds = new Set();
-        
-        snap1.forEach(doc => {
-            if (!seenIds.has(doc.id)) {
-                seenIds.add(doc.id);
-                allDocs.push(doc);
-            }
-        });
-        snap2.forEach(doc => {
-            if (!seenIds.has(doc.id)) {
-                seenIds.add(doc.id);
-                allDocs.push(doc);
-            }
-        });
-        
-        const snapshot = { forEach: (cb) => allDocs.forEach(cb) };
+        const fullPhone = "+91" + currentCleanPhone;
+        // 🎯 THE DATA FIX: Fetch appointments regardless of how the phone number was formatted
+        const q = query(collection(db, "appointments"), where("phone", "in", [currentCleanPhone, fullPhone]));
+        const snapshot = await getDocs(q);
         
         let appointments = [];
         snapshot.forEach(doc => {
@@ -218,12 +189,9 @@ const loadAppointments = async () => {
             const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
             const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
             
-            // Generate Google Calendar Link (Stateless)
             let gcalBtn = '';
             if (apt.date) {
-                // Convert YYYY-MM-DD to YYYYMMDD
                 const dateStr = apt.date.replace(/-/g, '');
-                // Create next day for an "all-day" event format
                 const nextDayDate = new Date(new Date(apt.date).getTime() + 86400000);
                 const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
                 
