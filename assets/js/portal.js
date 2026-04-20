@@ -191,11 +191,18 @@ const loadAppointments = async () => {
             
             let gcalBtn = '';
             if (apt.date) {
-                const dateStr = apt.date.replace(/-/g, '');
-                const nextDayDate = new Date(new Date(apt.date).getTime() + 86400000);
+                // Support both legacy (YYYY-MM-DD) and new (DD/MM/YYYY) formats
+                let normalizedDate = apt.date;
+                if (apt.date.includes('/')) {
+                    const parts = apt.date.split('/');
+                    normalizedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+                
+                const dateClean = normalizedDate.replace(/-/g, '');
+                const nextDayDate = new Date(new Date(normalizedDate).getTime() + 86400000);
                 const nextDayStr = nextDayDate.toISOString().split('T')[0].replace(/-/g, '');
                 
-                const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+Joshua&dates=${dateStr}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason: ${encodeURIComponent(apt.symptoms || 'General Checkup')}&location=Hope+Homeo+Care,+Mangalagiri`;
+                const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Clinic+Appointment+-+Dr.+K.+Nikhil+Joshua&dates=${dateClean}/${nextDayStr}&details=Consultation+at+Hope+Homeo+Care.+Reason: ${encodeURIComponent(apt.symptoms || 'General Checkup')}&location=Hope+Homeo+Care,+Mangalagiri`;
                 
                 gcalBtn = `
                     <a href="${gcalUrl}" target="_blank" class="mt-4 md:mt-0 inline-flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium py-2 px-4 rounded-lg transition-colors text-sm shrink-0">
@@ -261,7 +268,7 @@ const applyDynamicValidation = (dateInputId, timeSelectId) => {
                     return blockedSlots.includes(`${localDate}|All`);
                 }
             ],
-            dateFormat: "Y-m-d",
+            dateFormat: "d/m/Y",
             static: true, 
             disableMobile: "true",
             onChange: function(selectedDates, dateStr, instance) {

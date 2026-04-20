@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return blockedSlots.includes(`${localDate}|All`);
                     }
                 ],
-                dateFormat: "Y-m-d",
+                dateFormat: "d/m/Y",
                 static: true, 
                 disableMobile: "true",
                 onChange: function(selectedDates, dateStr, instance) {
@@ -292,7 +292,7 @@ const fetchBlogPosts = () => {
             const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
             
             const dateStr = post.published ? post.published.$t : new Date().toISOString();
-            const date = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const date = new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             html += `
                 <a href="${link}" target="_blank" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group">
