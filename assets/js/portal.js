@@ -10,6 +10,39 @@ window.sanitizePhone = (rawPhone) => {
     return clean;
 };
 
+// Symptom Appender & Auto-Resize Engine
+window.appendSymptom = (text, targetId) => {
+    const textarea = document.getElementById(targetId);
+    if (!textarea) return;
+    
+    if (textarea.value.trim() === "") {
+        textarea.value = text;
+    } else {
+        textarea.value += ", " + text;
+    }
+    
+    // Trigger auto-resize after appending
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    if (textarea.scrollHeight > 120) textarea.style.overflowY = 'auto';
+    
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
+const initAutoResize = () => {
+    const textareas = document.querySelectorAll('#patient-symptoms, #int-book-symptoms');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 120);
+            textarea.style.height = newHeight + 'px';
+            textarea.style.overflowY = textarea.scrollHeight > 120 ? 'auto' : 'hidden';
+        });
+    });
+};
+
+document.addEventListener('DOMContentLoaded', initAutoResize);
+
 let currentCleanPhone = null;
 let currentCompositeId = null;
 let currentPatientName = null;
