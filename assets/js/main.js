@@ -63,6 +63,9 @@ const initAutoResize = () => {
 document.addEventListener('DOMContentLoaded', () => {
     initAutoResize();
     
+    // Global Accessibility Focus Tracker
+    let previousFocusElement = null;
+
     // Setup Phone Input Numeric Keystroke Masking
     const phoneInput = document.getElementById('patient-phone');
     if (phoneInput) {
@@ -381,7 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Modal
     window.openBookingModal = (e) => {
         if (e && e.preventDefault) e.preventDefault();
+        previousFocusElement = document.activeElement;
         modal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('patient-name')?.focus(), 150);
     };
 
     window.closeBookingModal = () => {
@@ -392,6 +397,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (timeColumn) timeColumn.classList.add('hidden', 'opacity-0');
         const form = document.querySelector('#public-booking-form, form');
         if (form) form.reset();
+        
+        if (previousFocusElement) {
+            previousFocusElement.focus();
+            previousFocusElement = null;
+        }
     };
 
     triggers.forEach(btn => btn.addEventListener('click', window.openBookingModal));
@@ -405,10 +415,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Close on Escape key
+    // Close on Escape key (Universal Modal Handler)
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-            window.closeBookingModal();
+        if (e.key === 'Escape') {
+            if (!modal.classList.contains('hidden')) {
+                window.closeBookingModal();
+            }
+            const galModal = document.getElementById('advanced-gallery-modal');
+            if (galModal && !galModal.classList.contains('hidden')) {
+                window.closeFullGallery();
+            }
+            const loginModal = document.getElementById('login-modal');
+            if (loginModal && !loginModal.classList.contains('hidden')) {
+                // closeLogin is local, but we can't easily access it if it's trapped in a block
+                // Re-declaring for Escape safety or using state attributes
+            }
         }
     });
 
@@ -527,16 +548,174 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     fetchHeroImage();
+
+    // Slider Logic
+    window.openFullGallery = (startIndex = 0) => {
+        if (globalGalleryData.length === 0) return;
+        const modal = document.getElementById('advanced-gallery-modal');
+        if (!modal) return;
+        previousFocusElement = document.activeElement;
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('gallery-main-view')?.focus();
+        }, 10);
+        window.setGalleryImage(startIndex);
+    };
+
+    window.closeFullGallery = () => {
+        const modal = document.getElementById('advanced-gallery-modal');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            if (previousFocusElement) {
+                previousFocusElement.focus();
+                previousFocusElement = null;
+            }
+        }, 300);
+    };
+
+    // --- Patient Portal Login Engine ---
+    const loginModal = document.getElementById('login-modal');
+    const openPortalBtns = document.querySelectorAll('#nav-portal-btn, #mobile-portal-btn');
+    const closeLoginBtn = document.getElementById('close-login-btn');
+
+    let isUserLoggedIn = false;
+    onAuthStateChanged(auth, (user) => {
+        isUserLoggedIn = !!user;
+        openPortalBtns.forEach(btn => {
+            if (isUserLoggedIn && btn.tagName !== 'A') {
+                btn.innerHTML = `<span class="material-icons-round text-[18px]" aria-hidden="true">account_circle</span> Go to Portal`;
+            }
+        });
+    });
+
+    if (loginModal && openPortalBtns.length > 0) {
+        const openLogin = () => {
+            previousFocusElement = document.activeElement;
+            loginModal.classList.remove('hidden');
+            setTimeout(() => {
+                loginModal.classList.remove('opacity-0');
+                loginModal.querySelector('div').classList.remove('scale-95');
+                document.getElementById('login-phone')?.focus();
+            }, 10);
+
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'invisible'
+                });
+            }
+        };
+
+        const closeLogin = () => {
+            loginModal.classList.add('opacity-0');
+            loginModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                loginModal.classList.add('hidden');
+                if (previousFocusElement) {
+                    previousFocusElement.focus();
+                    previousFocusElement = null;
+                }
+            }, 300);
+        };
+
+        openPortalBtns.forEach(btn => btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (isUserLoggedIn) window.location.href = "patient-portal.html";
+            else openLogin();
+        }));
+        closeLoginBtn?.addEventListener('click', closeLogin);
+
+        // Global Escape & Enter Handler for Login Modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const loginModal = document.getElementById('login-modal');
+                if (loginModal && !loginModal.classList.contains('hidden')) {
+                    closeLogin();
+                }
+            }
+        });
+
+        const phoneInput = document.getElementById('login-phone');
+        const otpInput = document.getElementById('login-otp');
+        const sendOtpBtn = document.getElementById('send-otp-btn');
+        const verifyOtpBtn = document.getElementById('verify-otp-btn');
+        const backToPhoneBtn = document.getElementById('login-back-btn');
+
+        phoneInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendOtpBtn?.click();
+            }
+        });
+
+        otpInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verifyOtpBtn?.click();
+            }
+        });
+
+        // OTP Flow
+        let confirmationResult = null;
+
+        backToPhoneBtn?.addEventListener('click', () => {
+            document.getElementById('login-otp-step').classList.add('hidden');
+            document.getElementById('login-phone-step').classList.remove('hidden');
+            otpInput.value = '';
+            phoneInput?.focus();
+        });
+
+        sendOtpBtn?.addEventListener('click', async () => {
+            const phone = phoneInput.value.trim();
+            if (!/^\d{10}$/.test(phone)) return window.showToast("Enter a valid 10-digit number", "error");
+
+            sendOtpBtn.innerText = "Sending...";
+            sendOtpBtn.disabled = true;
+
+            try {
+                const formattedPhone = "+91" + phone;
+                confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+                document.getElementById('login-phone-step').classList.add('hidden');
+                document.getElementById('login-otp-step').classList.remove('hidden');
+                window.showToast("OTP sent to your phone");
+                setTimeout(() => otpInput?.focus(), 100);
+            } catch (error) {
+                console.error(error);
+                window.showToast("Rate limit exceeded or invalid number", "error");
+                sendOtpBtn.innerText = "Send OTP";
+                sendOtpBtn.disabled = false;
+            }
+        });
+
+        verifyOtpBtn?.addEventListener('click', async () => {
+            const otp = otpInput.value.trim();
+            if (otp.length !== 6) return window.showToast("Enter 6-digit OTP", "error");
+
+            verifyOtpBtn.innerText = "Verifying...";
+            verifyOtpBtn.disabled = true;
+
+            try {
+                await confirmationResult.confirm(otp);
+                window.showToast("Login successful!");
+                window.location.href = "patient-portal.html";
+            } catch (error) {
+                console.error(error);
+                window.showToast("Invalid OTP. Try again.", "error");
+                verifyOtpBtn.innerText = "Verify & Login";
+                verifyOtpBtn.disabled = false;
+            }
+        });
+    }
 });
 
 const fetchBlogPosts = () => {
     const blogContainer = document.getElementById('blogger-feed-container');
     if (!blogContainer) return;
 
-    // Define the global callback that Blogger will execute
     window.handleBloggerFeed = (data) => {
         const posts = data.feed.entry || [];
-        
         if (posts.length === 0) {
             blogContainer.innerHTML = '<p class="col-span-full text-center text-slate-500">No articles published yet. Check back soon!</p>';
             return;
@@ -545,19 +724,15 @@ const fetchBlogPosts = () => {
         let html = '';
         posts.forEach(post => {
             const title = post.title ? post.title.$t : 'Untitled Update';
-            
             let link = '#';
             if (post.link) {
                 const altLink = post.link.find(l => l.rel === 'alternate');
                 if (altLink) link = altLink.href;
             }
-            
             let rawSnippet = '';
             if (post.summary) rawSnippet = post.summary.$t;
             else if (post.content) rawSnippet = post.content.$t;
-            
             const cleanSnippet = rawSnippet.replace(/(<([^>]+)>)/gi, "").substring(0, 120) + '...';
-            
             const dateStr = post.published ? post.published.$t : new Date().toISOString();
             const date = new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -574,11 +749,9 @@ const fetchBlogPosts = () => {
                 </a>
             `;
         });
-        
         blogContainer.innerHTML = html;
     };
 
-    // Injecting JSONP script to fetch the feed
     const script = document.createElement('script');
     script.src = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
     document.head.appendChild(script);
@@ -587,16 +760,11 @@ const fetchBlogPosts = () => {
 async function loadGoogleReviews() {
     const track = document.getElementById('testimonials-grid');
     const modalList = document.getElementById('modal-reviews-list');
-    
     try {
         const response = await fetch('./assets/data/reviews.json');
         if (!response.ok) throw new Error("JSON file not found.");
         const reviews = await response.json();
-
-        if (!reviews || reviews.length === 0) {
-            if(track) track.innerHTML = '<p class="text-slate-500">Awaiting review sync...</p>';
-            return;
-        }
+        if (!reviews || reviews.length === 0) return;
 
         const renderStars = (rating) => {
             let stars = '';
@@ -607,9 +775,7 @@ async function loadGoogleReviews() {
         };
 
         const createReviewCard = (review) => {
-            // Teal background for auto-generated avatars to match logo
             const photo = review.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=0f766e&color=fff`;
-
             return `
                 <div class="w-80 md:w-96 p-6 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
                     ${renderStars(review.rating || 5)}
@@ -629,27 +795,14 @@ async function loadGoogleReviews() {
         };
 
         let cardsHtml = '';
-        reviews.forEach(r => {
-            cardsHtml += createReviewCard(r); 
-        });
-
-        // Inject into Marquee (Duplicate for seamless loop)
-        if (track) {
-            track.innerHTML = cardsHtml + cardsHtml;
-        }
-        
-        // Inject into Modal
-        if (modalList) {
-            modalList.innerHTML = cardsHtml;
-        }
-
+        reviews.forEach(r => cardsHtml += createReviewCard(r));
+        if (track) track.innerHTML = cardsHtml + cardsHtml;
+        if (modalList) modalList.innerHTML = cardsHtml;
     } catch (error) {
         console.error("Google Reviews Sync Failed:", error);
-        if(track) track.innerHTML = '<p class="text-rose-500">Currently syncing live reviews...</p>';
     }
 }
 
-// Modal Controllers
 window.openReviewsModal = () => {
     const modal = document.getElementById('reviews-modal');
     if(modal) {
@@ -668,93 +821,61 @@ window.closeReviewsModal = () => {
 };
 
 async function loadActiveCampaign() {
-    // UX Check: Don't show again if they already closed it this session
     if (sessionStorage.getItem('campaignSeen')) return;
-
     try {
-        // Fetch campaigns marked as active to prevent scanning old data
         const q = query(collection(db, "campaigns"), where("status", "==", "active"));
-        const snapshot = await getDocs(q).catch(err => {
-            console.error("Campaign query failed:", err);
-            throw err;
-        });
-        
+        const snapshot = await getDocs(q);
         if (snapshot.empty) return;
 
         const now = new Date();
         let activeCampaign = null;
-
-        // Check which campaign falls exactly within the current time window
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.startTime && data.endTime) {
                 const start = data.startTime.toDate();
                 const end = data.endTime.toDate();
-                
-                if (now >= start && now <= end) {
-                    activeCampaign = data;
-                }
+                if (now >= start && now <= end) activeCampaign = data;
             }
         });
 
-        // Render the campaign if a valid one exists
         if (activeCampaign && activeCampaign.imageUrl) {
             const modal = document.getElementById('campaign-modal');
             const img = document.getElementById('campaign-image');
             const box = document.getElementById('campaign-box');
             const closeBtn = document.getElementById('close-campaign-btn');
-
             img.src = activeCampaign.imageUrl;
-            
-            // Smooth fade-in animation
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 box.classList.remove('scale-95');
             }, 50);
 
-            // Close logic
             const closeModal = () => {
                 modal.classList.add('opacity-0');
                 box.classList.add('scale-95');
                 setTimeout(() => modal.classList.add('hidden'), 300);
-                sessionStorage.setItem('campaignSeen', 'true'); // Lock it for this session
+                sessionStorage.setItem('campaignSeen', 'true');
             };
-
-            closeBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
-            });
+            closeBtn?.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
         }
-    } catch (error) {
-        console.error("Failed to load campaign:", error);
-    }
+    } catch (error) { console.error("Failed to load campaign:", error); }
 }
 
-// Global Gallery Functions
 let globalGalleryData = [];
 let currentGalleryIndex = 0;
 
 const loadPublicGallery = async () => {
     const previewGrid = document.getElementById('gallery-preview-grid');
     if (!previewGrid) return;
-
     try {
         const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
-        const snapshot = await getDocs(q).catch(err => {
-            console.error("Gallery query failed:", err);
-            throw err;
-        });
-        
-        if (snapshot.empty) {
-            previewGrid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12">Gallery updating soon...</div>';
-            return;
-        }
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return;
 
         globalGalleryData = [];
         snapshot.forEach(doc => globalGalleryData.push(doc.data().imageUrl));
 
-        // 1. Populate Compact Preview (Max 3 images)
         let previewHtml = '';
         for(let i=0; i < Math.min(3, globalGalleryData.length); i++) {
             const hideClass = i > 0 ? 'hidden md:block' : '';
@@ -769,67 +890,36 @@ const loadPublicGallery = async () => {
         }
         previewGrid.innerHTML = previewHtml;
 
-        // 2. Populate Thumbnails in Modal
         const thumbContainer = document.getElementById('gallery-thumbnails');
         if (thumbContainer) {
             let thumbHtml = '';
             globalGalleryData.forEach((url, idx) => {
-                thumbHtml += `
-                    <img onclick="window.setGalleryImage(${idx})" id="thumb-${idx}" src="${url}" 
-                         class="h-full aspect-video object-cover rounded-lg cursor-pointer opacity-50 hover:opacity-100 transition-all border-2 border-transparent snap-center">
-                `;
+                thumbHtml += `<img onclick="window.setGalleryImage(${idx})" id="thumb-${idx}" src="${url}" class="h-full aspect-video object-cover rounded-lg cursor-pointer opacity-50 hover:opacity-100 transition-all border-2 border-transparent snap-center">`;
             });
             thumbContainer.innerHTML = thumbHtml;
         }
-
-    } catch (error) {
-        console.error("Gallery fetch error:", error);
-        previewGrid.innerHTML = '<div class="col-span-full text-center text-rose-500 py-12">Failed to load gallery.</div>';
-    }
-};
-
-// Slider Logic
-window.openFullGallery = (startIndex = 0) => {
-    if (globalGalleryData.length === 0) return;
-    const modal = document.getElementById('advanced-gallery-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    window.setGalleryImage(startIndex);
-};
-
-window.closeFullGallery = () => {
-    const modal = document.getElementById('advanced-gallery-modal');
-    if (!modal) return;
-    modal.classList.add('opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+    } catch (error) { console.error("Gallery fetch error:", error); }
 };
 
 window.setGalleryImage = (index) => {
     if (index < 0) index = globalGalleryData.length - 1;
     if (index >= globalGalleryData.length) index = 0;
     currentGalleryIndex = index;
-    
     const mainImg = document.getElementById('gallery-main-view');
     if (!mainImg) return;
-    mainImg.style.opacity = 0; // Fade out
+    mainImg.style.opacity = 0;
     setTimeout(() => {
         mainImg.src = globalGalleryData[currentGalleryIndex];
-        mainImg.style.opacity = 1; // Fade in
+        mainImg.style.opacity = 1;
     }, 150);
-
-    // Highlight active thumbnail
     globalGalleryData.forEach((_, idx) => {
         const thumb = document.getElementById(`thumb-${idx}`);
         if (thumb) {
-            if (idx === currentGalleryIndex) {
-                thumb.classList.remove('opacity-50', 'border-transparent');
-                thumb.classList.add('opacity-100', 'border-blue-500');
-                thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            } else {
-                thumb.classList.add('opacity-50', 'border-transparent');
-                thumb.classList.remove('opacity-100', 'border-blue-500');
-            }
+            thumb.classList.toggle('opacity-50', idx !== currentGalleryIndex);
+            thumb.classList.toggle('border-transparent', idx !== currentGalleryIndex);
+            thumb.classList.toggle('opacity-100', idx === currentGalleryIndex);
+            thumb.classList.toggle('border-blue-500', idx === currentGalleryIndex);
+            if (idx === currentGalleryIndex) thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     });
 };
@@ -837,7 +927,6 @@ window.setGalleryImage = (index) => {
 window.nextGalleryImage = () => window.setGalleryImage(currentGalleryIndex + 1);
 window.prevGalleryImage = () => window.setGalleryImage(currentGalleryIndex - 1);
 
-// Add Keyboard controls for the Slider
 document.addEventListener('keydown', (e) => {
     const modal = document.getElementById('advanced-gallery-modal');
     if (modal && !modal.classList.contains('hidden')) {
@@ -847,142 +936,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// --- Patient Portal Login Engine ---
-const loginModal = document.getElementById('login-modal');
-const openPortalBtns = document.querySelectorAll('#nav-portal-btn, #mobile-portal-btn');
-const closeLoginBtn = document.getElementById('close-login-btn');
-
-let isUserLoggedIn = false;
-// Memory Management: Assign listener to unsubscription variable
-const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-    isUserLoggedIn = !!user;
-    // Change button text if logged in to provide UX feedback
-    openPortalBtns.forEach(btn => {
-        if (isUserLoggedIn && btn.tagName !== 'A') {
-            btn.innerHTML = `<span class="material-icons-round text-[18px]" aria-hidden="true">account_circle</span> Go to Portal`;
-        }
-    });
-});
-
-if (loginModal && openPortalBtns.length > 0) {
-    const openLogin = () => {
-        loginModal.classList.remove('hidden');
-        setTimeout(() => {
-            loginModal.classList.remove('opacity-0');
-            loginModal.querySelector('div').classList.remove('scale-95');
-        }, 10);
-
-        // Memory Management: Ensure RecaptchaVerifier is only initialized ONCE
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                'size': 'invisible'
-            });
-        }
-    };
-
-    const closeLogin = () => {
-        loginModal.classList.add('opacity-0');
-        loginModal.querySelector('div').classList.add('scale-95');
-        setTimeout(() => loginModal.classList.add('hidden'), 300);
-    };
-
-    openPortalBtns.forEach(btn => btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (isUserLoggedIn) {
-            window.location.href = "patient-portal.html";
-        } else {
-            openLogin();
-        }
-    }));
-    closeLoginBtn?.addEventListener('click', closeLogin);
-
-    // Global Escape & Enter Handler for Login Modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const loginModal = document.getElementById('login-modal');
-            if (loginModal && !loginModal.classList.contains('hidden')) {
-                closeLogin();
-            }
-        }
-    });
-
-    const phoneInput = document.getElementById('login-phone');
-    const otpInput = document.getElementById('login-otp');
-    const sendOtpBtn = document.getElementById('send-otp-btn');
-    const verifyOtpBtn = document.getElementById('verify-otp-btn');
-    const backToPhoneBtn = document.getElementById('login-back-btn');
-
-    phoneInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            sendOtpBtn?.click();
-        }
-    });
-
-    otpInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            verifyOtpBtn?.click();
-        }
-    });
-
-    // OTP Flow
-    let confirmationResult = null;
-
-    backToPhoneBtn?.addEventListener('click', () => {
-        document.getElementById('login-otp-step').classList.add('hidden');
-        document.getElementById('login-phone-step').classList.remove('hidden');
-        otpInput.value = ''; // Clear OTP field
-    });
-
-    sendOtpBtn?.addEventListener('click', async () => {
-        const phone = phoneInput.value.trim();
-        if (!/^\d{10}$/.test(phone)) return window.showToast("Enter a valid 10-digit number", "error");
-
-        sendOtpBtn.innerText = "Sending...";
-        sendOtpBtn.disabled = true;
-
-        try {
-            const formattedPhone = "+91" + phone;
-            confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier).catch(err => {
-                console.error("Sign in failed:", err);
-                throw err;
-            });
-            document.getElementById('login-phone-step').classList.add('hidden');
-            document.getElementById('login-otp-step').classList.remove('hidden');
-            window.showToast("OTP sent to your phone");
-        } catch (error) {
-            console.error(error);
-            window.showToast("Rate limit exceeded or invalid number", "error");
-            sendOtpBtn.innerText = "Send OTP";
-            sendOtpBtn.disabled = false;
-        }
-    });
-
-    verifyOtpBtn?.addEventListener('click', async () => {
-        const otp = otpInput.value.trim();
-        if (otp.length !== 6) return window.showToast("Enter 6-digit OTP", "error");
-
-        verifyOtpBtn.innerText = "Verifying...";
-        verifyOtpBtn.disabled = true;
-
-        try {
-            await confirmationResult.confirm(otp).catch(err => {
-                console.error("OTP confirmation failed:", err);
-                throw err;
-            });
-            window.showToast("Login successful!");
-            window.location.href = "patient-portal.html";
-        } catch (error) {
-            console.error(error);
-            window.showToast("Invalid OTP. Try again.", "error");
-            verifyOtpBtn.innerText = "Verify & Login";
-            verifyOtpBtn.disabled = false;
-        }
-    });
-}
-
-// Final Execution Call
 fetchBlogPosts();
 loadGoogleReviews();
 loadActiveCampaign();
