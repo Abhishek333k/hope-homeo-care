@@ -139,6 +139,15 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Brief Symptoms / Reason</label>
                             <textarea id="int-book-symptoms" required rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 resize-none" placeholder="e.g., Fever, follow-up..."></textarea>
+                            <!-- Quick-Select Chips -->
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button type="button" onclick="window.appendSymptom('Follow-up', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Follow-up</button>
+                                <button type="button" onclick="window.appendSymptom('Fever & Cold', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Fever & Cold</button>
+                                <button type="button" onclick="window.appendSymptom('Skin Allergy', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Skin Allergy</button>
+                                <button type="button" onclick="window.appendSymptom('Gastric Issue', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Gastric Issue</button>
+                                <button type="button" onclick="window.appendSymptom('Hair Fall', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Hair Fall</button>
+                                <button type="button" onclick="window.appendSymptom('Joint Pain', 'int-book-symptoms')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors symptom-chip">Joint Pain</button>
+                            </div>
                         </div>
                     </div>
 
@@ -202,5 +211,17 @@
     </div>
 
     <script type="module" src="assets/js/portal.js"></script>
+    <script>
+        window.appendSymptom = (text, targetId) => {
+            const textarea = document.getElementById(targetId);
+            if (!textarea) return;
+            if (textarea.value.trim() === "") {
+                textarea.value = text;
+            } else {
+                textarea.value += ", " + text;
+            }
+            textarea.dispatchEvent(new Event('input'));
+        };
+    </script>
 </body>
 </html>
