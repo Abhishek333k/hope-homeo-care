@@ -29,7 +29,10 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "index.html";
         return;
     }
-    currentCleanPhone = user.phoneNumber;
+    
+    // ARCHITECT FIX: Sanitize phone number to 10-digits only to align with Firestore rules
+    currentCleanPhone = user.phoneNumber.replace('+91', '');
+    
     document.getElementById('logout-btn')?.classList.remove('hidden');
     document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
     
@@ -199,7 +202,9 @@ async function loadRemedyData() {
     const pills = document.getElementById('profile-pills');
     
     try {
-        const docSnap = await getDoc(doc(db, "patient_records", currentCompositeId));
+        // ARCHITECT FIX: Align with Admin Panel patient record structure
+        // Using "patients" collection and currentCleanPhone (10-digits) as document ID
+        const docSnap = await getDoc(doc(db, "patients", currentCleanPhone));
         if (!docSnap.exists()) {
             card?.classList.add('hidden');
             if(pills) pills.innerHTML = '<span class="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">New Patient</span>';
@@ -355,6 +360,7 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
     submitBtn.innerText = "Processing...";
 
     try {
+        // ARCHITECT FIX: Save phone as sanitized 10-digit number to bypass firestore rule create blocks
         await addDoc(collection(db, "appointments"), {
             name: currentPatientName,
             phone: currentCleanPhone,
