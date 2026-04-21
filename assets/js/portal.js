@@ -249,8 +249,13 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     window.showToast("Appointment requested successfully!");
                     window.closeInternalBooking();
                     document.getElementById('internal-booking-form').reset();
-                    const intTimeSection = document.getElementById('int-time-slot-section');
-                    if (intTimeSection) intTimeSection.classList.add('hidden');
+                    
+                    const modalContent = document.getElementById('internal-booking-modal-content');
+                    const intTimeSection = document.getElementById('int-time-slot-column');
+                    
+                    if (modalContent) modalContent.classList.replace('max-w-4xl', 'max-w-md');
+                    if (intTimeSection) intTimeSection.classList.add('hidden', 'opacity-0');
+
                     loadClinicalFeed();
                 } catch(err) {
                     console.error("Internal booking failed:", err);
@@ -764,8 +769,16 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
             static: true,
             disableMobile: "true",
             onChange: (selectedDates, dateStr) => { 
-                const timeSlotSection = document.getElementById('int-time-slot-section');
-                if (timeSlotSection) timeSlotSection.classList.remove('hidden');
+                const modalContent = document.getElementById('internal-booking-modal-content');
+                const timeColumn = document.getElementById('int-time-slot-column');
+                
+                if (modalContent) modalContent.classList.replace('max-w-md', 'max-w-4xl');
+                if (timeColumn) {
+                    timeColumn.classList.remove('hidden');
+                    setTimeout(() => timeColumn.classList.remove('opacity-0'), 100);
+                    timeColumn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
                 hiddenInput.value = ""; 
                 renderPills(dateStr); 
             }

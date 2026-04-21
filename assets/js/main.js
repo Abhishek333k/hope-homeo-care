@@ -217,8 +217,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 static: true,
                 disableMobile: "true",
                 onChange: (selectedDates, dateStr) => {
-                    const timeSlotSection = document.getElementById('time-slot-section');
-                    if (timeSlotSection) timeSlotSection.classList.remove('hidden');
+                    const modalContent = document.getElementById('booking-modal-content');
+                    const timeColumn = document.getElementById('time-slot-column');
+                    
+                    if (modalContent) modalContent.classList.replace('max-w-md', 'max-w-4xl');
+                    if (timeColumn) {
+                        timeColumn.classList.remove('hidden');
+                        setTimeout(() => timeColumn.classList.remove('opacity-0'), 100);
+                        timeColumn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+
                     hiddenInput.value = "";
                     renderPills(dateStr);
                 }
@@ -357,8 +365,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof window.closeBookingModal === 'function') window.closeBookingModal();
                     
                     // Progressive disclosure reset
-                    const timeSlotSection = document.getElementById('time-slot-section');
-                    if (timeSlotSection) timeSlotSection.classList.add('hidden');
+                    const modalContent = document.getElementById('booking-modal-content');
+                    const timeColumn = document.getElementById('time-slot-column');
+                    
+                    if (modalContent) modalContent.classList.replace('max-w-4xl', 'max-w-md');
+                    if (timeColumn) timeColumn.classList.add('hidden', 'opacity-0');
 
                     submitBtn.innerText = "Submit Request";
                     submitBtn.disabled = false;
