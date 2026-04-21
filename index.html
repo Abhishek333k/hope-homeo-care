@@ -151,37 +151,37 @@
 <body class="antialiased text-gray-800 bg-gray-50 font-sans cursor-default">
 
     <!-- Header -->
-    <header class="sticky top-0 z-10 bg-white/90 backdrop-blur-md shadow-sm w-full transition-all duration-300">
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm w-full transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <div class="text-2xl font-bold text-blue-900 tracking-tight flex items-center gap-2">
-                <img src="./assets/images/Hope_Banner.webp" alt=" Hope Homeo Care"
+                <img src="./assets/images/Hope_Banner.webp" alt="Hope Homeo Care"
                     class="h-8 md:h-10 lg:h-12 w-auto object-contain transition-all duration-500">
             </div>
-            <nav class="hidden md:flex space-x-8 items-center">
+            <nav class="hidden md:flex lg:space-x-4 xl:space-x-8 items-center">
                 <a href="#home"
-                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300">Home</a>
+                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-1">Home</a>
                 <a href="#about"
-                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300">About Dr.
-                    K. Nikhil Joshua</a>
+                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-1">About Dr. K. Nikhil Joshua</a>
                 <a href="#services"
-                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300">Services</a>
+                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-1">Services</a>
                 <a href="#testimonials"
-                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300">Testimonials</a>
+                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-1">Testimonials</a>
                 <a href="#blogs"
-                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300">Blog</a>
+                    class="text-gray-600 hover:text-blue-700 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-1">Blog</a>
             </nav>
             <button id="nav-portal-btn"
-                class="hidden md:flex items-center gap-2 border-2 border-blue-100 text-blue-800 hover:bg-blue-50 px-6 py-2.5 rounded-full font-semibold transition-all duration-300 mr-4 shadow-sm hover:shadow-md">
+                class="hidden md:flex items-center gap-2 border-2 border-blue-100 text-blue-800 hover:bg-blue-50 px-6 py-2.5 rounded-full font-semibold transition-all duration-300 mr-4 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 <span aria-hidden="true" class="material-icons-round text-[20px]">account_circle</span>
                 Patient Portal
             </button>
             <a href="javascript:void(0)" onclick="window.openBookingModal()"
-                class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hidden md:block">
+                class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hidden md:block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Book Appointment
             </a>
 
             <!-- Mobile Menu Button -->
-            <button id="mobile-menu-btn" class="md:hidden text-blue-900 focus:outline-none">
+            <button id="mobile-menu-btn" 
+                class="md:hidden text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-1">
                 <svg aria-hidden="true" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
                     </path>
@@ -191,21 +191,21 @@
 
         <!-- Mobile Menu Dropdown -->
         <div id="mobile-menu"
-            class="hidden md:hidden bg-white border-t border-slate-100 absolute w-full left-0 top-full shadow-lg">
-<nav class="flex flex-col px-4 pt-2 pb-4 space-y-2 text-slate-600 font-medium">
-                <a href="#home" class="block py-2 hover:text-blue-700">Home</a>
-                <a href="#about" class="block py-2 hover:text-blue-700">About Dr. K. Nikhil Joshua</a>
-                <a href="#services" class="block py-2 hover:text-blue-700">Services</a>
-                <a href="#testimonials" class="block py-2 hover:text-blue-700">Testimonials</a>
-                <a href="#blogs" class="block py-2 hover:text-blue-700">Blog</a>
+            class="md:hidden bg-white border-t border-slate-100 absolute w-full left-0 top-full shadow-lg max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-in-out">
+            <nav class="flex flex-col px-4 pt-2 pb-4 space-y-2 text-slate-600 font-medium">
+                <a href="#home" class="block py-2 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Home</a>
+                <a href="#about" class="block py-2 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">About Dr. K. Nikhil Joshua</a>
+                <a href="#services" class="block py-2 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Services</a>
+                <a href="#testimonials" class="block py-2 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Testimonials</a>
+                <a href="#blogs" class="block py-2 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Blog</a>
                 <div class="pt-4 border-t border-slate-100">
                     <button id="mobile-portal-btn"
-                        class="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-800 font-bold py-3.5 rounded-xl border border-blue-200 transition-all active:scale-[0.98]">
+                        class="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-800 font-bold py-3.5 rounded-xl border border-blue-200 transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <span aria-hidden="true" class="material-icons-round text-[22px]">account_circle</span>
                         Patient Portal
                     </button>
                     <a href="javascript:void(0)" onclick="window.openBookingModal()"
-                        class="block w-full text-center bg-blue-700 text-white font-bold py-3 rounded-xl mt-3 shadow-lg shadow-blue-700/20">
+                        class="block w-full text-center bg-blue-700 text-white font-bold py-3 rounded-xl mt-3 shadow-lg shadow-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-500 ring-offset-2">
                         Book Appointment
                     </a>
                 </div>
@@ -376,7 +376,7 @@
 
     <!-- 4. Clinical Expertise (Services) Section -->
     <section id="services" class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-[96%] xl:max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-5xl font-bold text-blue-900 mb-4">Specialized Natural Care</h2>
                 <p class="text-lg text-gray-600 max-w-2xl mx-auto">Combining physiological homeopathy with psychological
@@ -384,52 +384,79 @@
                 <div class="w-24 h-1.5 bg-blue-500 mx-auto mt-6 rounded-full"></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6">
                 <!-- Respiratory -->
                 <div
-                    class="group p-8 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500">
+                    class="group p-6 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
                     <div
-                        class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500">
-                        <svg aria-hidden="true" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500 shrink-0">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M4.5 12.75l6 6 9-13.5"></path>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Respiratory Wellness</h3>
-                    <p class="text-gray-600 leading-relaxed">Advanced treatment for Asthma, Sinusitis, and Chronic Cough
+                    <h3 class="text-xl xl:text-lg font-bold text-gray-900 mb-3 leading-tight">Respiratory Wellness</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Advanced treatment for Asthma, Sinusitis, and Chronic Cough
                         using natural physiological triggers.</p>
                 </div>
 
                 <!-- Skin -->
                 <div
-                    class="group p-8 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500">
+                    class="group p-6 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
                     <div
-                        class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500">
-                        <svg aria-hidden="true" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500 shrink-0">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A12 12 0 0112 21a12 12 0 01-8.716-6.747M3 12c0-.778.099-1.533.284-2.253">
                             </path>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Skin & Allergy Care</h3>
-                    <p class="text-gray-600 leading-relaxed">Holistic management for Eczema, Psoriasis, and Urticaria by
+                    <h3 class="text-xl xl:text-lg font-bold text-gray-900 mb-3 leading-tight">Skin & Allergy Care</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Holistic management for Eczema, Psoriasis, and Urticaria by
                         addressing internal systemic imbalances.</p>
                 </div>
 
                 <!-- Mental Wellness -->
                 <div
-                    class="group p-8 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500">
+                    class="group p-6 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
                     <div
-                        class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500">
-                        <svg aria-hidden="true" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500 shrink-0">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z">
                             </path>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Mental & Emotional Health</h3>
-                    <p class="text-gray-600 leading-relaxed">Integrating Counseling Psychology to resolve Stress,
-                        Anxiety, and Depression-related symptoms.</p>
+                    <h3 class="text-xl xl:text-lg font-bold text-gray-900 mb-3 leading-tight">Mental Wellness</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Integrating Counseling Psychology to resolve Stress, Anxiety, and Depression-related symptoms.</p>
+                </div>
+
+                <!-- Paediatrics -->
+                <div
+                    class="group p-6 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
+                    <div
+                        class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500 shrink-0">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39 1.593 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl xl:text-lg font-bold text-gray-900 mb-3 leading-tight">Paediatric Care</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Gentle, effective treatment for recurrent colds, tonsillitis, adenoids, autism, and ADHD.</p>
+                </div>
+
+                <!-- Gastric -->
+                <div
+                    class="group p-6 rounded-3xl bg-blue-50 border border-blue-100/50 hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col h-full">
+                    <div
+                        class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-700 group-hover:bg-blue-700 group-hover:text-white transition-colors duration-500 shrink-0">
+                        <svg aria-hidden="true" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.67.224a6 6 0 01-3.86.517l-2.387-.477a2 2 0 00-1.022.547l-1.16 1.16a2 2 0 002.828 2.828l1.16-1.16a2 2 0 00.547-1.022l.477-2.387a6 6 0 01.517-3.86l.224-.67a6 6 0 01.517-3.86l-.477-2.387a2 2 0 00-.547-1.022l-1.16-1.16a2 2 0 00-2.828-2.828l1.16 1.16a2 2 0 001.022.547l2.387.477a6 6 0 003.86-.517l.67-.224a6 6 0 013.86-.517l2.387.477a2 2 0 001.022-.547l1.16-1.16a2 2 0 00-2.828-2.828l-1.16 1.16a2 2 0 00-.547 1.022l-.477 2.387a6 6 0 01-.517 3.86l-.224.67a6 6 0 01-.517 3.86l.477 2.387a2 2 0 00.547 1.022l1.16 1.16a2 2 0 002.828 2.828l-1.16-1.16z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl xl:text-lg font-bold text-gray-900 mb-3 leading-tight">Gastric Health</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Comprehensive care for acidity, piles, GERD, IBS, and chronic constipation.</p>
                 </div>
             </div>
         </div>
