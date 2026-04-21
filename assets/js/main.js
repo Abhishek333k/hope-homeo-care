@@ -217,6 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 static: true,
                 disableMobile: "true",
                 onChange: (selectedDates, dateStr) => {
+                    const timeSlotSection = document.getElementById('time-slot-section');
+                    if (timeSlotSection) timeSlotSection.classList.remove('hidden');
                     hiddenInput.value = "";
                     renderPills(dateStr);
                 }
@@ -353,6 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     symptomsInput.value = '';
                     consentInput.checked = false;
                     if (typeof window.closeBookingModal === 'function') window.closeBookingModal();
+                    
+                    // Progressive disclosure reset
+                    const timeSlotSection = document.getElementById('time-slot-section');
+                    if (timeSlotSection) timeSlotSection.classList.add('hidden');
+
                     submitBtn.innerText = "Submit Request";
                     submitBtn.disabled = false;
                 }, 2000);

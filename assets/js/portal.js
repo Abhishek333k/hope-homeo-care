@@ -249,6 +249,8 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     window.showToast("Appointment requested successfully!");
                     window.closeInternalBooking();
                     document.getElementById('internal-booking-form').reset();
+                    const intTimeSection = document.getElementById('int-time-slot-section');
+                    if (intTimeSection) intTimeSection.classList.add('hidden');
                     loadClinicalFeed();
                 } catch(err) {
                     console.error("Internal booking failed:", err);
@@ -761,7 +763,12 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
             dateFormat: "Y-m-d",
             static: true,
             disableMobile: "true",
-            onChange: (selectedDates, dateStr) => { hiddenInput.value = ""; renderPills(dateStr); }
+            onChange: (selectedDates, dateStr) => { 
+                const timeSlotSection = document.getElementById('int-time-slot-section');
+                if (timeSlotSection) timeSlotSection.classList.remove('hidden');
+                hiddenInput.value = ""; 
+                renderPills(dateStr); 
+            }
         });
     }
 

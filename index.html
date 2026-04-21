@@ -693,60 +693,60 @@
                         <input type="text" id="patient-date" required placeholder="Select Date"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-gray-700 bg-white">
                     </div>
-                    <div class="col-span-1 md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Time Slot</label>
-                    <div class="space-y-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
-                        <input type="hidden" id="patient-time" required>
-                        
-                        <!-- Morning Accordion -->
-                        <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
-                            <button type="button" onclick="window.toggleAccordion('morning')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-icons-round text-amber-500 text-lg">light_mode</span>
-                                    <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Morning Session</span>
-                                </div>
-                                <span id="chevron-morning" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
-                            </button>
-                            <div id="content-morning" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
-                                <div id="slots-morning" class="grid grid-cols-3 gap-2 p-3 pt-0">
-                                    <!-- Slots -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Afternoon Accordion -->
-                        <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
-                            <button type="button" onclick="window.toggleAccordion('afternoon')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-icons-round text-orange-500 text-lg">wb_sunny</span>
-                                    <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Afternoon Session</span>
-                                </div>
-                                <span id="chevron-afternoon" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
-                            </button>
-                            <div id="content-afternoon" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
-                                <div id="slots-afternoon" class="grid grid-cols-3 gap-2 p-3 pt-0">
-                                    <!-- Slots -->
+                    <div id="time-slot-section" class="col-span-1 md:col-span-2 hidden transition-all duration-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Time Slot</label>
+                        <div class="space-y-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+                            <input type="hidden" id="patient-time" required>
+                            
+                            <!-- Morning Accordion -->
+                            <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
+                                <button type="button" onclick="window.toggleAccordion('morning')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="material-icons-round text-amber-500 text-lg">light_mode</span>
+                                        <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Morning Session</span>
+                                    </div>
+                                    <span id="chevron-morning" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
+                                </button>
+                                <div id="content-morning" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                                    <div id="slots-morning" class="grid grid-cols-3 gap-2 p-3 pt-0">
+                                        <!-- Slots -->
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Evening Accordion -->
-                        <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
-                            <button type="button" onclick="window.toggleAccordion('evening')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="material-icons-round text-indigo-500 text-lg">bedtime</span>
-                                    <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Evening Session</span>
+                            <!-- Afternoon Accordion -->
+                            <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
+                                <button type="button" onclick="window.toggleAccordion('afternoon')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="material-icons-round text-orange-500 text-lg">wb_sunny</span>
+                                        <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Afternoon Session</span>
+                                    </div>
+                                    <span id="chevron-afternoon" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
+                                </button>
+                                <div id="content-afternoon" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                                    <div id="slots-afternoon" class="grid grid-cols-3 gap-2 p-3 pt-0">
+                                        <!-- Slots -->
+                                    </div>
                                 </div>
-                                <span id="chevron-evening" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
-                            </button>
-                            <div id="content-evening" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
-                                <div id="slots-evening" class="grid grid-cols-3 gap-2 p-3 pt-0">
-                                    <!-- Slots -->
+                            </div>
+
+                            <!-- Evening Accordion -->
+                            <div class="border border-slate-200 rounded-xl bg-white overflow-hidden accordion-item">
+                                <button type="button" onclick="window.toggleAccordion('evening')" class="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-all outline-none">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="material-icons-round text-indigo-500 text-lg">bedtime</span>
+                                        <span class="text-[11px] font-black uppercase tracking-widest text-slate-700">Evening Session</span>
+                                    </div>
+                                    <span id="chevron-evening" class="material-icons-round text-slate-400 transition-transform duration-300">expand_more</span>
+                                </button>
+                                <div id="content-evening" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                                    <div id="slots-evening" class="grid grid-cols-3 gap-2 p-3 pt-0">
+                                        <!-- Slots -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Brief Symptoms</label>
