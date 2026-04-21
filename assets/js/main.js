@@ -526,9 +526,10 @@ const fetchBlogPosts = () => {
         blogContainer.innerHTML = html;
     };
 
-    // Removed legacy JSONP script injection to prevent <head> bloat
-    console.log("Blog feed integration moved to static links for performance.");
-    blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-blue-600 font-bold hover:underline">our official journal</a> for the latest health updates.</p></div>';
+    // Injecting JSONP script to fetch the feed
+    const script = document.createElement('script');
+    script.src = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
+    document.head.appendChild(script);
 };
 
 async function loadGoogleReviews() {
