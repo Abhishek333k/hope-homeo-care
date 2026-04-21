@@ -1,10 +1,10 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { auth, db } from './firebase-init.js';
 
 let currentCleanPhone = '';
 let currentPatientName = '';
-let currentCompositeId = '';
+let globalAppointments = [];
 let previousFocusElement = null;
 
 // Standardized Toast System for Portal
@@ -30,52 +30,60 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
     
-    // ARCHITECT FIX: Sanitize phone number to 10-digits only to align with Firestore rules
+    // Clean phone number for query
     currentCleanPhone = user.phoneNumber.replace('+91', '');
     
     document.getElementById('logout-btn')?.classList.remove('hidden');
     document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
     
-    await scanForProfiles();
+    await fetchFamilyProfiles(currentCleanPhone);
 });
 
-async function scanForProfiles() {
+async function fetchFamilyProfiles(phone) {
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+        const q = query(collection(db, "appointments"), where("phone", "==", phone));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-            renderEmptyState();
+            renderEmptyFeed();
             return;
         }
 
-        const uniqueNames = [...new Set(snapshot.docs.map(d => d.data().name))];
+        // Store in-memory snapshot for self-generation
+        globalAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const uniqueNames = [...new Set(globalAppointments.map(app => app.name))];
         
         if (uniqueNames.length > 1) {
             showProfileSelector(uniqueNames);
-        } else {
-            selectProfile(uniqueNames[0]);
         }
+        
+        // Automatically load first profile by default
+        window.loadTimeline(uniqueNames[0]);
+
     } catch (e) {
-        console.error("Profile Scan Error:", e);
-        window.showToast("Failed to connect to clinical records.", "error");
+        console.error("Fetch Error:", e);
+        window.showToast("Connection error.", "error");
     }
 }
 
-function renderEmptyState() {
+function renderEmptyFeed() {
     const feed = document.getElementById('clinical-feed');
     const view = document.getElementById('clinical-feed-view');
     if(view) view.classList.remove('hidden');
     if(feed) {
         feed.innerHTML = `
             <div class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                <p class="text-slate-500 font-medium">Welcome! No clinical records found for this number.</p>
-                <p class="text-slate-400 text-sm mt-1">Book your first session to start your journey.</p>
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="material-icons-round text-slate-400 text-3xl">history</span>
+                </div>
+                <p class="text-slate-500 font-bold text-lg">No previous appointments found</p>
+                <p class="text-slate-400 text-sm mt-1">Book your first session to start your history.</p>
             </div>
         `;
     }
     const nameEl = document.getElementById('profile-name');
-    if(nameEl) nameEl.innerText = "New Patient";
+    if(nameEl) nameEl.innerText = "Welcome";
 }
 
 function showProfileSelector(names) {
@@ -89,11 +97,11 @@ function showProfileSelector(names) {
     selector.classList.remove('hidden');
     
     let html = '';
-    names.sort().forEach(name => {
+    names.forEach(name => {
         const initial = name.charAt(0).toUpperCase();
         html += `
-            <button onclick="window.selectProfile('${name}')" class="group flex flex-col items-center gap-4 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
-                <div class="w-20 h-20 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center text-3xl font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
+            <button onclick="window.loadTimeline('${name}')" class="group flex flex-col items-center gap-4 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+                <div class="w-20 h-20 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center text-3xl font-black group-hover:bg-navy-900 group-hover:text-white transition-colors">
                     ${initial}
                 </div>
                 <span class="font-bold text-slate-700 text-lg">${name}</span>
@@ -103,17 +111,64 @@ function showProfileSelector(names) {
     container.innerHTML = html;
 }
 
-window.selectProfile = async (name) => {
-    currentPatientName = name;
-    currentCompositeId = `${name}_${currentCleanPhone}`;
+window.loadTimeline = (targetName) => {
+    currentPatientName = targetName;
     
     document.getElementById('profile-selector-view')?.classList.add('hidden');
     document.getElementById('clinical-feed-view')?.classList.remove('hidden');
     
-    // UI Feedback: Show Switch button if more than 1 linked profile
-    const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
-    const snap = await getDocs(q);
-    const uniqueNames = [...new Set(snap.docs.map(d => d.data().name))];
+    renderPatientIdentity();
+    
+    const feed = document.getElementById('clinical-feed');
+    if(!feed) return;
+
+    // Filter and Sort in-memory
+    const filtered = globalAppointments
+        .filter(app => app.name === targetName)
+        .sort((a, b) => {
+            const ta = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp?.seconds || 0);
+            const tb = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp?.seconds || 0);
+            return tb - ta;
+        });
+
+    let html = '';
+    filtered.forEach(data => {
+        const status = data.status || 'pending';
+        const statusColors = {
+            'pending': 'bg-amber-50 text-amber-700 border-amber-100',
+            'confirmed': 'bg-blue-50 text-blue-700 border-blue-100',
+            'completed': 'bg-emerald-50 text-emerald-700 border-emerald-100'
+        };
+
+        const adviceHtml = (data.medicalAdvice && data.medicalAdvice.trim() !== '') ? `
+            <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
+                <span class="material-icons-round text-navy-900">medical_services</span>
+                <div>
+                    <p class="text-xs font-bold text-navy-900 uppercase tracking-widest mb-1">Medical Advice</p>
+                    <p class="text-sm text-slate-600 leading-relaxed">${data.medicalAdvice}</p>
+                </div>
+            </div>
+        ` : '';
+
+        html += `
+            <div class="relative pl-0 md:pl-4">
+                <div class="absolute -left-[37px] md:-left-[45px] top-6 w-4 h-4 rounded-full bg-white border-4 border-slate-300 z-10"></div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <span class="text-xs font-black uppercase tracking-widest text-slate-400">${data.date} • ${data.time}</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[status] || 'bg-slate-50 text-slate-500 border-slate-100'}">${status}</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-slate-800">Symptom Summary</h4>
+                    <p class="text-sm text-slate-500 mt-2">${data.symptoms}</p>
+                    ${adviceHtml}
+                </div>
+            </div>
+        `;
+    });
+    feed.innerHTML = html;
+
+    // Handle switch profile button visibility if multiple names exist
+    const uniqueNames = [...new Set(globalAppointments.map(app => app.name))];
     if (uniqueNames.length > 1) {
         const switchBtn = document.getElementById('switch-profile-btn');
         if(switchBtn) {
@@ -121,10 +176,6 @@ window.selectProfile = async (name) => {
             switchBtn.onclick = () => showProfileSelector(uniqueNames);
         }
     }
-
-    renderPatientIdentity();
-    loadClinicalFeed();
-    loadRemedyData();
 };
 
 function renderPatientIdentity() {
@@ -135,117 +186,6 @@ function renderPatientIdentity() {
     if(nameEl) nameEl.innerText = currentPatientName;
     if(avatar) avatar.innerText = currentPatientName.charAt(0).toUpperCase();
     if(bookingNameHint) bookingNameHint.innerText = currentPatientName;
-}
-
-async function loadClinicalFeed() {
-    const feed = document.getElementById('clinical-feed');
-    if(!feed) return;
-    
-    feed.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-20 bg-slate-100 rounded-xl"></div><div class="h-20 bg-slate-100 rounded-xl"></div></div>';
-    
-    try {
-        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone), where("name", "==", currentPatientName), orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q);
-        
-        let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const date = data.date;
-            const status = data.status || 'pending';
-            const statusColors = {
-                'pending': 'bg-amber-50 text-amber-700 border-amber-100',
-                'confirmed': 'bg-emerald-50 text-emerald-700 border-emerald-100',
-                'cancelled': 'bg-slate-50 text-slate-500 border-slate-100'
-            };
-
-            html += `
-                <div class="relative pl-0 md:pl-4">
-                    <div class="absolute -left-[37px] md:-left-[45px] top-6 w-4 h-4 rounded-full bg-white border-4 border-slate-300 z-10"></div>
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                            <span class="text-xs font-black uppercase tracking-widest text-slate-400">${date}</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[status]}">${status}</span>
-                        </div>
-                        <h4 class="text-lg font-bold text-slate-800">Appointment Summary</h4>
-                        <div class="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
-                            <div class="flex items-center gap-1.5">
-                                <span class="material-icons-round text-lg text-blue-500">schedule</span>
-                                <span>${data.time}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <span class="material-icons-round text-lg text-blue-500">psychology</span>
-                                <span>Note: ${data.symptoms.substring(0, 50)}...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        feed.innerHTML = html;
-        
-        // Update "Member Since"
-        const sinceEl = document.getElementById('profile-member-since');
-        if(sinceEl && !snapshot.empty) {
-            const firstDate = snapshot.docs[snapshot.docs.length - 1].data().date;
-            sinceEl.innerText = `Member Since ${firstDate}`;
-        }
-
-    } catch (e) {
-        console.error("Feed Error:", e);
-        feed.innerHTML = '<p class="text-rose-500">Error loading clinical timeline.</p>';
-    }
-}
-
-async function loadRemedyData() {
-    const card = document.getElementById('current-remedy-card');
-    const container = document.getElementById('current-remedy-details');
-    const pills = document.getElementById('profile-pills');
-    
-    try {
-        // ARCHITECT FIX: Align with Admin Panel patient record structure
-        // Using "patients" collection and currentCleanPhone (10-digits) as document ID
-        const docSnap = await getDoc(doc(db, "patients", currentCleanPhone));
-        if (!docSnap.exists()) {
-            card?.classList.add('hidden');
-            if(pills) pills.innerHTML = '<span class="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">New Patient</span>';
-            return;
-        }
-
-        const data = docSnap.data();
-        
-        // Medicine Rendering
-        if (data.medicines && data.medicines.length > 0) {
-            card?.classList.remove('hidden');
-            let medHtml = '';
-            data.medicines.forEach(med => {
-                medHtml += `
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">${med.frequency}</p>
-                        <h4 class="text-lg font-black text-slate-800">${med.name}</h4>
-                        <p class="text-sm text-slate-500 mt-1">${med.dosage}</p>
-                    </div>
-                `;
-            });
-            if(container) container.innerHTML = medHtml;
-        } else {
-            card?.classList.add('hidden');
-        }
-
-        // Prescription Pills Rendering (High-level tags)
-        if(pills) {
-            let pillHtml = '';
-            if(data.condition) {
-                pillHtml += `<span class="px-3 py-1 bg-blue-600 text-white rounded-full text-[10px] font-bold uppercase tracking-wider">${data.condition}</span>`;
-            }
-            if(data.lastCheckup) {
-                pillHtml += `<span class="px-3 py-1 bg-white text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">Last Visit: ${data.lastCheckup}</span>`;
-            }
-            pills.innerHTML = pillHtml || '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-100">Active Patient</span>';
-        }
-
-    } catch (e) {
-        console.error("Remedy Data Error:", e);
-    }
 }
 
 // Modal Logic
@@ -305,8 +245,8 @@ const applyInternalValidation = (dateInputId, hiddenInputId) => {
         if(e) e.preventDefault();
         hiddenInput.value = slot;
         document.querySelectorAll('.chip-time-int').forEach(c => {
-            c.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
-            if(c.innerText.trim() === slot) c.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+            c.classList.remove('bg-navy-900', 'text-white', 'border-navy-900');
+            if(c.innerText.trim() === slot) c.classList.add('bg-navy-900', 'text-white', 'border-navy-900');
         });
     };
 
@@ -317,7 +257,7 @@ const applyInternalValidation = (dateInputId, hiddenInputId) => {
             let html = '';
             range.slots.forEach(slot => {
                 html += `
-                    <button type="button" onclick="window.selectTimeSlot(event, '${slot}')" class="chip-time-int h-10 w-full border border-slate-200 rounded-lg text-[10px] font-bold hover:border-blue-500 transition-all">
+                    <button type="button" onclick="window.selectTimeSlot(event, '${slot}')" class="chip-time-int h-10 w-full border border-slate-200 rounded-lg text-[10px] font-bold hover:border-navy-900 transition-all">
                         ${slot}
                     </button>
                 `;
@@ -360,7 +300,6 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
     submitBtn.innerText = "Processing...";
 
     try {
-        // ARCHITECT FIX: Save phone as sanitized 10-digit number to bypass firestore rule create blocks
         await addDoc(collection(db, "appointments"), {
             name: currentPatientName,
             phone: currentCleanPhone,
@@ -383,8 +322,5 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         window.closeInternalBooking();
-        if(!document.getElementById('profile-selector-view').classList.contains('hidden')) {
-            // Cannot escape selector easily if forced, but logic is there
-        }
     }
 });
