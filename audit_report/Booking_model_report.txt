@@ -1,0 +1,141 @@
+BOOKING MODEL AUDIT REPORT - HOPE HOMEO CARE
+=============================================
+Date: 2026-04-21
+Scope: Hybrid 3-Column Time Slot Picker UI (Public & Portal)
+
+PART 1: PUBLIC BOOKING MODAL (index.html)
+------------------------------------------
+Location: #booking-modal
+
+<div id="booking-modal"
+    role="dialog" aria-modal="true"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 md:p-8 relative">
+        <h3 class="text-2xl font-bold text-teal-900 mb-6">Request an Appointment</h3>
+        <form class="space-y-4">
+            <!-- Time Slot Section -->
+            <div class="col-span-1 md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Time Slot</label>
+                <div class="grid grid-cols-1 gap-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <input type="hidden" id="patient-time" required>
+                    
+                    <!-- Morning -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3 text-slate-600">
+                            <span class="material-icons-round text-amber-500 text-lg">light_mode</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Morning</span>
+                        </div>
+                        <div id="slots-morning" class="grid grid-cols-3 gap-2"></div>
+                    </div>
+
+                    <!-- Afternoon -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3 text-slate-600">
+                            <span class="material-icons-round text-orange-500 text-lg">wb_sunny</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Afternoon</span>
+                        </div>
+                        <div id="slots-afternoon" class="grid grid-cols-3 gap-2"></div>
+                    </div>
+
+                    <!-- Evening -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3 text-slate-600">
+                            <span class="material-icons-round text-indigo-500 text-lg">bedtime</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Evening</span>
+                        </div>
+                        <div id="slots-evening" class="grid grid-cols-3 gap-2"></div>
+                    </div>
+                </div>
+            </div>
+            ...
+        </form>
+    </div>
+</div>
+
+
+PART 2: INTERNAL BOOKING MODAL (patient-portal.html)
+----------------------------------------------------
+Location: #internal-booking-modal
+
+<div id="internal-booking-modal" 
+    role="dialog" aria-modal="true"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-opacity opacity-0">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 p-6 md:p-8 relative my-auto">
+        <h3 class="text-xl font-bold text-slate-800 mb-1">Book New Session</h3>
+        <form id="internal-booking-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Preferred Time Slot</label>
+                <div class="grid grid-cols-1 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <input type="hidden" id="int-book-time" required>
+                    <div id="slots-morning" class="grid grid-cols-3 gap-2"></div>
+                    <div id="slots-afternoon" class="grid grid-cols-3 gap-2"></div>
+                    <div id="slots-evening" class="grid grid-cols-3 gap-2"></div>
+                </div>
+            </div>
+            ...
+        </form>
+    </div>
+</div>
+
+
+PART 3: PUBLIC CHIP LOGIC (main.js)
+-----------------------------------
+
+const applyDynamicValidation = (dateInputId, hiddenInputId) => {
+    const morningRange = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM"];
+    const afternoonRange = ["12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
+    const eveningRange = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
+
+    const renderPills = (dateStr) => {
+        // Clear and show Scanning State (Skeleton)
+        const skeleton = `<div class="h-11 bg-slate-100 rounded-xl animate-pulse"></div>`.repeat(3);
+        mCont.innerHTML = skeleton; aCont.innerHTML = skeleton; eCont.innerHTML = skeleton;
+
+        setTimeout(() => {
+            ranges.forEach(range => {
+                range.slots.forEach(slot => {
+                    const active = hiddenInput.value === slot;
+                    const chipClass = isBlocked 
+                        ? 'bg-slate-100 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
+                        : (active 
+                            ? 'bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200' 
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md');
+
+                    html += `<button type="button" class="h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time ${chipClass}">${slot}</button>`;
+                });
+            });
+        }, 300);
+    };
+
+    window.selectTimeSlot = (slot, inputId, dateStr) => {
+        const input = document.getElementById(inputId);
+        input.value = slot;
+        document.querySelectorAll(`.chip-time`).forEach(btn => {
+            if (btn.innerText.trim() === slot) {
+                btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200";
+            } else if (!btn.disabled) {
+                btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md";
+            }
+        });
+    };
+};
+
+
+PART 4: PORTAL CHIP LOGIC (portal.js)
+--------------------------------------
+(Mirroring logic for secure, internal patient booking with .chip-time-int namespace)
+
+const applyDynamicValidation = (dateInputId, hiddenInputId) => {
+    ...
+    window.selectTimeSlot = (slot, inputId, dateStr) => {
+        const input = document.getElementById(inputId);
+        input.value = slot;
+        document.querySelectorAll(`.chip-time-int`).forEach(btn => {
+            if (btn.innerText.trim() === slot) {
+                btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time-int bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200";
+            } else if (!btn.disabled) {
+                btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time-int bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md";
+            }
+        });
+    };
+};

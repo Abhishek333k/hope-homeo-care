@@ -64,65 +64,106 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!dateInput || !hiddenInput) return;
 
+        window.toggleAccordion = (id) => {
+            const sections = ['morning', 'afternoon', 'evening'];
+            sections.forEach(s => {
+                const content = document.getElementById(`content-${s}`);
+                const chevron = document.getElementById(`chevron-${s}`);
+                if (!content || !chevron) return;
+
+                if (s === id) {
+                    const isOpen = content.classList.contains('max-h-96');
+                    if (isOpen) {
+                        content.classList.replace('max-h-96', 'max-h-0');
+                        chevron.classList.remove('rotate-180');
+                    } else {
+                        content.classList.replace('max-h-0', 'max-h-96');
+                        chevron.classList.add('rotate-180');
+                    }
+                } else {
+                    content.classList.replace('max-h-96', 'max-h-0');
+                    chevron.classList.remove('rotate-180');
+                }
+            });
+        };
+
         const renderPills = (dateStr) => {
             const mCont = document.getElementById('slots-morning');
             const aCont = document.getElementById('slots-afternoon');
             const eCont = document.getElementById('slots-evening');
             if (!mCont || !aCont || !eCont) return;
 
-            // Clear and show Scanning State (Skeleton)
-            const skeleton = `<div class="h-11 bg-slate-100 rounded-xl animate-pulse"></div>`.repeat(3);
+            // Reset Accordion State
+            ['morning', 'afternoon', 'evening'].forEach(s => {
+                const content = document.getElementById(`content-${s}`);
+                const chevron = document.getElementById(`chevron-${s}`);
+                content.classList.replace('max-h-96', 'max-h-0');
+                chevron.classList.remove('rotate-180');
+            });
+
+            // Skeletons
+            const skeleton = `<div class="h-10 bg-slate-100 rounded-lg animate-pulse"></div>`.repeat(3);
             mCont.innerHTML = skeleton; aCont.innerHTML = skeleton; eCont.innerHTML = skeleton;
 
-            // Short timeout to simulate "Scanning Availability..." if date changed
             setTimeout(() => {
                 const ranges = [
-                    { cont: mCont, slots: morningRange, type: 'Morning' },
-                    { cont: aCont, slots: afternoonRange, type: 'Afternoon' },
-                    { cont: eCont, slots: eveningRange, type: 'Evening' }
+                    { cont: mCont, slots: morningRange, type: 'morning' },
+                    { cont: aCont, slots: afternoonRange, type: 'afternoon' },
+                    { cont: eCont, slots: eveningRange, type: 'evening' }
                 ];
+
+                let firstAvailableId = null;
 
                 ranges.forEach(range => {
                     let html = '';
+                    let hasAvailableInSession = false;
+
                     range.slots.forEach(slot => {
                         let isBlocked = false;
                         if (dateStr) {
                             if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
-                            if (range.type === 'Morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
-                            if (range.type === 'Evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
+                            if (range.type === 'morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
+                            if (range.type === 'evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
                             if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
                         }
 
+                        if (!isBlocked && !firstAvailableId) firstAvailableId = range.type;
+                        if (!isBlocked) hasAvailableInSession = true;
+
                         const active = hiddenInput.value === slot;
                         const chipClass = isBlocked 
-                            ? 'bg-slate-100 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
+                            ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
                             : (active 
-                                ? 'bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200' 
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md');
+                                ? 'bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200' 
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg');
 
                         html += `
                             <button type="button" 
                                 ${isBlocked ? 'disabled' : ''}
                                 onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${dateStr}')" 
-                                class="h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time ${chipClass}">
+                                class="h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time ${chipClass}">
                                 ${slot}
                             </button>
                         `;
                     });
-                    range.cont.innerHTML = html || `<p class="col-span-3 text-[10px] text-slate-400 text-center py-2">No slots available</p>`;
+                    range.cont.innerHTML = html;
                 });
-            }, 300);
+
+                // Smart Default: Open first available session
+                if (firstAvailableId) window.toggleAccordion(firstAvailableId);
+                else window.toggleAccordion('morning');
+
+            }, 400);
         };
 
         window.selectTimeSlot = (slot, inputId, dateStr) => {
             const input = document.getElementById(inputId);
             input.value = slot;
-            // Immediate style update for all chips in the grid
             document.querySelectorAll(`.chip-time`).forEach(btn => {
                 if (btn.innerText.trim() === slot) {
-                    btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-teal-600 text-white shadow-lg border-teal-600 ring-2 ring-teal-200";
+                    btn.className = "h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200";
                 } else if (!btn.disabled) {
-                    btn.className = "h-11 w-full rounded-xl border font-bold text-[11px] transition-all duration-200 flex items-center justify-center chip-time bg-white text-slate-700 border-slate-200 hover:border-teal-500 hover:shadow-md";
+                    btn.className = "h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg";
                 }
             });
         };
