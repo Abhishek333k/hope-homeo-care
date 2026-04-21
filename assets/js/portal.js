@@ -648,7 +648,15 @@ window.closeInternalBooking = () => {
     const modal = document.getElementById('internal-booking-modal');
     if (!modal) return;
     modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        const modalContent = document.getElementById('internal-booking-modal-content');
+        if (modalContent) modalContent.classList.replace('max-w-4xl', 'max-w-md');
+        const timeColumn = document.getElementById('int-time-slot-column');
+        if (timeColumn) timeColumn.classList.add('hidden', 'opacity-0');
+        const form = document.getElementById('internal-booking-form');
+        if (form) form.reset();
+    }, 300);
 };
 
 // --- Dynamic Session Validation ---
@@ -753,6 +761,13 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
                         if (range.type === 'morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
                         if (range.type === 'evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
                         if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
+                    }
+
+                    if (isSelectedToday) {
+                        const st = parseTime(slot);
+                        const sd = new Date(now);
+                        sd.setHours(st.hours, st.minutes, 0, 0);
+                        if ((sd - now) < 0) isBlocked = true;
                     }
 
                     if (!isBlocked && !firstAvailableId) firstAvailableId = range.type;

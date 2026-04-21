@@ -43,10 +43,6 @@ window.appendSymptom = (text, targetId) => {
     }
     
     // Trigger auto-resize after appending
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    if (textarea.scrollHeight > 120) textarea.style.overflowY = 'auto';
-    
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 };
 
@@ -66,6 +62,14 @@ const initAutoResize = () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     initAutoResize();
+    
+    // Setup Phone Input Numeric Keystroke Masking
+    const phoneInput = document.getElementById('patient-phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 10);
+        });
+    }
     // Mobile Menu Logic
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -199,6 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
                         }
 
+                        if (isSelectedToday) {
+                            const st = parseTime(slot);
+                            const sd = new Date(now);
+                            sd.setHours(st.hours, st.minutes, 0, 0);
+                            if ((sd - now) < 0) isBlocked = true;
+                        }
+
                         if (!isBlocked && !firstAvailableId) firstAvailableId = range.type;
 
                         const active = hiddenInput.value === slot;
@@ -323,6 +334,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.closeBookingModal = () => {
         modal.classList.add('hidden');
+        const modalContent = document.getElementById('booking-modal-content');
+        if (modalContent) modalContent.classList.replace('max-w-4xl', 'max-w-md');
+        const timeColumn = document.getElementById('time-slot-column');
+        if (timeColumn) timeColumn.classList.add('hidden', 'opacity-0');
+        const form = document.querySelector('#public-booking-form, form');
+        if (form) form.reset();
     };
 
     triggers.forEach(btn => btn.addEventListener('click', window.openBookingModal));
@@ -371,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('patient-fax').value) {
                 console.log("Spam detected via honeypot.");
                 submitBtn.innerText = "Request Sent!";
-                setTimeout(() => closeModal(), 1000);
+                setTimeout(() => window.closeBookingModal(), 1000);
                 return;
             }
 
