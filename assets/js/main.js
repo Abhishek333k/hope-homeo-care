@@ -896,7 +896,7 @@ if (loginModal && openPortalBtns.length > 0) {
     }));
     closeLoginBtn?.addEventListener('click', closeLogin);
 
-    // Global Escape Handler for Login Modal
+    // Global Escape & Enter Handler for Login Modal
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const loginModal = document.getElementById('login-modal');
@@ -906,12 +906,27 @@ if (loginModal && openPortalBtns.length > 0) {
         }
     });
 
-    // OTP Flow
-    const sendOtpBtn = document.getElementById('send-otp-btn');
-    const verifyOtpBtn = document.getElementById('verify-otp-btn');
     const phoneInput = document.getElementById('login-phone');
     const otpInput = document.getElementById('login-otp');
+    const sendOtpBtn = document.getElementById('send-otp-btn');
+    const verifyOtpBtn = document.getElementById('verify-otp-btn');
     const backToPhoneBtn = document.getElementById('login-back-btn');
+
+    phoneInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendOtpBtn?.click();
+        }
+    });
+
+    otpInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            verifyOtpBtn?.click();
+        }
+    });
+
+    // OTP Flow
     let confirmationResult = null;
 
     backToPhoneBtn?.addEventListener('click', () => {
