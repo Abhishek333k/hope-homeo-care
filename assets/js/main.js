@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         html += `
                             <button type="button" 
                                 ${isBlocked ? 'disabled' : ''}
-                                onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${dateStr}')" 
+                                onclick="window.selectTimeSlot(event, '${slot}', '${hiddenInputId}', '${dateStr}')" 
                                 class="h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time relative ${chipClass}">
                                 ${badge}
                                 ${slot}
@@ -201,11 +201,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 400);
         };
 
-        window.selectTimeSlot = (slot, inputId, dateStr) => {
+        window.selectTimeSlot = (event, slot, inputId, dateStr) => {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
             const input = document.getElementById(inputId);
             input.value = slot;
-            // Simple re-render to clear recommendations and apply active state
-            renderPills(dateStr); 
+            
+            // Isolate State Mutation
+            const chips = document.querySelectorAll('.chip-time');
+            chips.forEach(chip => {
+                chip.classList.remove('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+                if (!chip.disabled) {
+                    chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500');
+                }
+            });
+
+            if (event && event.currentTarget) {
+                const currentChip = event.currentTarget;
+                currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500', 'border-amber-400');
+                currentChip.classList.add('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+                
+                const badge = currentChip.querySelector('span');
+                if (badge) badge.remove();
+            }
         };
 
         renderPills();
