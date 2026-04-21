@@ -70,7 +70,48 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.value = e.target.value.replace(/\D/g, '').substring(0, 10);
         });
     }
-    // Mobile Menu Logic
+
+    // --- Header Dynamics (Scroll listener for Glassmorphism) ---
+    const header = document.querySelector('header');
+    if (header) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 20) {
+                header.classList.remove('bg-white/90', 'backdrop-blur-md', 'shadow-sm');
+                header.classList.add('bg-white/95', 'backdrop-blur-lg', 'shadow-md');
+            } else {
+                header.classList.remove('bg-white/95', 'backdrop-blur-lg', 'shadow-md');
+                header.classList.add('bg-white/90', 'backdrop-blur-md', 'shadow-sm');
+            }
+        });
+    }
+
+    // --- ScrollSpy Intersection Observer (Active Nav Links) ---
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+    const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -70% 0px',
+        threshold: 0
+    };
+
+    const scrollSpyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                navLinks.forEach(link => {
+                    link.classList.remove('text-blue-700', 'font-bold', 'border-b-2', 'border-blue-600');
+                    if (link.getAttribute('href') === `#${id}`) {
+                        link.classList.add('text-blue-700', 'font-bold', 'border-b-2', 'border-blue-600');
+                    }
+                });
+            }
+        });
+    }, observerOptions);
+
+    sections.forEach(section => scrollSpyObserver.observe(section));
+
+    // --- Mobile Menu Logic ---
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     
@@ -152,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ['morning', 'afternoon', 'evening'].forEach(s => {
                 const content = document.getElementById(`content-${s}`);
                 const chevron = document.getElementById(`chevron-${s}`);
-                content.classList.replace('max-h-96', 'max-h-0');
-                chevron.classList.remove('rotate-180');
+                if(content) content.classList.replace('max-h-96', 'max-h-0');
+                if(chevron) chevron.classList.remove('rotate-180');
             });
 
             // Skeletons
@@ -690,11 +731,7 @@ async function loadActiveCampaign() {
     }
 }
 
-// Call functions on load
-fetchBlogPosts();
-loadGoogleReviews();
-loadActiveCampaign();
-
+// Global Gallery Functions
 let globalGalleryData = [];
 let currentGalleryIndex = 0;
 
@@ -809,8 +846,6 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') window.closeFullGallery();
     }
 });
-
-loadPublicGallery();
 
 // --- Patient Portal Login Engine ---
 const loginModal = document.getElementById('login-modal');
@@ -931,3 +966,9 @@ if (loginModal && openPortalBtns.length > 0) {
         }
     });
 }
+
+// Final Execution Call
+fetchBlogPosts();
+loadGoogleReviews();
+loadActiveCampaign();
+loadPublicGallery();
