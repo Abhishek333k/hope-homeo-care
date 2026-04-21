@@ -87,6 +87,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
+        const parseTime = (timeStr) => {
+            const [time, modifier] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':');
+            if (hours === '12') hours = '00';
+            if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+            return { hours: parseInt(hours), minutes: parseInt(minutes) };
+        };
+
         const renderPills = (dateStr) => {
             const mCont = document.getElementById('slots-morning');
             const aCont = document.getElementById('slots-afternoon');
@@ -113,11 +121,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 ];
 
                 let firstAvailableId = null;
+                let recommendedSlot = null;
+                const now = new Date();
+                const todayStr = now.toISOString().split('T')[0];
+                const isSelectedToday = dateStr === todayStr;
+
+                // 1. Prediction Engine: Find recommended slot
+                for (const range of ranges) {
+                    for (const slot of range.slots) {
+                        let isBlocked = false;
+                        if (dateStr) {
+                            if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
+                            if (range.type === 'morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
+                            if (range.type === 'evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
+                            if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
+                        }
+
+                        if (!isBlocked) {
+                            if (isSelectedToday) {
+                                const st = parseTime(slot);
+                                const sd = new Date(now);
+                                sd.setHours(st.hours, st.minutes, 0, 0);
+                                if ((sd - now) / (1000 * 60) >= 30) {
+                                    recommendedSlot = slot;
+                                    break;
+                                }
+                            } else {
+                                recommendedSlot = slot;
+                                break;
+                            }
+                        }
+                    }
+                    if (recommendedSlot) break;
+                }
 
                 ranges.forEach(range => {
                     let html = '';
-                    let hasAvailableInSession = false;
-
                     range.slots.forEach(slot => {
                         let isBlocked = false;
                         if (dateStr) {
@@ -128,20 +167,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         if (!isBlocked && !firstAvailableId) firstAvailableId = range.type;
-                        if (!isBlocked) hasAvailableInSession = true;
 
                         const active = hiddenInput.value === slot;
+                        const isRecommended = slot === recommendedSlot && !active;
+                        
                         const chipClass = isBlocked 
                             ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
                             : (active 
-                                ? 'bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200' 
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg');
+                                ? 'bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200 z-10' 
+                                : (isRecommended 
+                                    ? 'bg-white text-slate-700 border-amber-400 shadow-sm' 
+                                    : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg'));
+
+                        const badge = isRecommended ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-pulse z-20">NEXT</span>` : '';
 
                         html += `
                             <button type="button" 
                                 ${isBlocked ? 'disabled' : ''}
                                 onclick="window.selectTimeSlot('${slot}', '${hiddenInputId}', '${dateStr}')" 
-                                class="h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time ${chipClass}">
+                                class="h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time relative ${chipClass}">
+                                ${badge}
                                 ${slot}
                             </button>
                         `;
@@ -149,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     range.cont.innerHTML = html;
                 });
 
-                // Smart Default: Open first available session
                 if (firstAvailableId) window.toggleAccordion(firstAvailableId);
                 else window.toggleAccordion('morning');
 
@@ -159,13 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.selectTimeSlot = (slot, inputId, dateStr) => {
             const input = document.getElementById(inputId);
             input.value = slot;
-            document.querySelectorAll(`.chip-time`).forEach(btn => {
-                if (btn.innerText.trim() === slot) {
-                    btn.className = "h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200";
-                } else if (!btn.disabled) {
-                    btn.className = "h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg";
-                }
-            });
+            // Simple re-render to clear recommendations and apply active state
+            renderPills(dateStr); 
         };
 
         renderPills();
