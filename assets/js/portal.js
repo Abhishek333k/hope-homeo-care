@@ -686,8 +686,9 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
             let firstAvailableId = null;
             let recommendedSlot = null;
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-            const isSelectedToday = dateStr === todayStr;
+            const parts = dateStr ? dateStr.split('/') : [];
+            const selectedDate = dateStr ? new Date(parts[2], parts[1] - 1, parts[0]) : null;
+            const isSelectedToday = selectedDate ? selectedDate.toDateString() === now.toDateString() : false;
 
             for (const range of ranges) {
                 for (const slot of range.slots) {
@@ -764,8 +765,8 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
     if (typeof flatpickr !== 'undefined') {
         fp = flatpickr(dateInput, {
             minDate: "today",
-            disable: [ (date) => (date.getDay() === 0 || blockedSlots.includes(date.toISOString().split('T')[0] + '|All')) ],
-            dateFormat: "Y-m-d",
+            disable: [ (date) => (date.getDay() === 0) ],
+            dateFormat: "d/m/Y",
             static: true,
             disableMobile: "true",
             onChange: (selectedDates, dateStr) => { 
