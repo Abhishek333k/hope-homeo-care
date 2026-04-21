@@ -207,10 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const chipClass = isBlocked 
                             ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
                             : (active 
-                                ? 'bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200 z-10' 
+                                ? 'bg-blue-600 text-white shadow-md border-blue-600 ring-2 ring-blue-200 z-10' 
                                 : (isRecommended 
                                     ? 'bg-white text-slate-700 border-amber-400 shadow-sm' 
-                                    : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg'));
+                                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-500 rounded-lg'));
 
                         const badge = isRecommended ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-pulse z-20">NEXT</span>` : '';
 
@@ -244,16 +244,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Isolate State Mutation
             const chips = document.querySelectorAll('.chip-time');
             chips.forEach(chip => {
-                chip.classList.remove('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+                chip.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
                 if (!chip.disabled) {
-                    chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500');
+                    chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500');
                 }
             });
 
             if (event && event.currentTarget) {
                 const currentChip = event.currentTarget;
-                currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500', 'border-amber-400');
-                currentChip.classList.add('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+                currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500', 'border-amber-400');
+                currentChip.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
                 
                 const badge = currentChip.querySelector('span');
                 if (badge) badge.remove();
@@ -495,11 +495,11 @@ const fetchBlogPosts = () => {
             html += `
                 <a href="${link}" target="_blank" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col group">
                     <div class="mb-4">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-teal-600 bg-teal-50 px-3 py-1 rounded-full">${date}</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">${date}</span>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-teal-600 transition-colors">${title}</h3>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3 leading-snug group-hover:text-blue-600 transition-colors">${title}</h3>
                     <p class="text-slate-500 text-sm mb-6 flex-1">${cleanSnippet}</p>
-                    <div class="pt-4 border-t border-slate-100 mt-auto flex items-center text-teal-600 font-bold text-sm">
+                    <div class="pt-4 border-t border-slate-100 mt-auto flex items-center text-blue-600 font-bold text-sm">
                         Read Article <span class="material-icons-round text-lg ml-1 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </div>
                 </a>
@@ -511,7 +511,7 @@ const fetchBlogPosts = () => {
 
     // Removed legacy JSONP script injection to prevent <head> bloat
     console.log("Blog feed integration moved to static links for performance.");
-    blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-teal-600 font-bold hover:underline">our official journal</a> for the latest health updates.</p></div>';
+    blogContainer.innerHTML = '<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center"><p class="text-slate-500">Visit <a href="https://hopehomeocare.blogspot.com" target="_blank" class="text-blue-600 font-bold hover:underline">our official journal</a> for the latest health updates.</p></div>';
 };
 
 async function loadGoogleReviews() {
@@ -541,7 +541,7 @@ async function loadGoogleReviews() {
             const photo = review.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=0f766e&color=fff`;
 
             return `
-                <div class="w-80 md:w-96 p-6 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 hover:shadow-xl hover:border-teal-200">
+                <div class="w-80 md:w-96 p-6 rounded-2xl bg-white border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] shrink-0 flex flex-col h-full transform transition-transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
                     ${renderStars(review.rating || 5)}
                     <p class="text-slate-600 text-sm leading-relaxed mb-6 flex-1">"${review.text}"</p>
                     <div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100">
@@ -549,7 +549,7 @@ async function loadGoogleReviews() {
                         <div>
                             <p class="font-bold text-sm text-slate-900 flex items-center gap-1">
                                 ${review.author_name} 
-                                <span class="material-icons-round text-[14px] text-teal-600" title="Google Review">verified</span>
+                                <span class="material-icons-round text-[14px] text-blue-600" title="Google Review">verified</span>
                             </p>
                             <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">${review.relative_time_description}</p>
                         </div>
@@ -758,11 +758,11 @@ window.setGalleryImage = (index) => {
         if (thumb) {
             if (idx === currentGalleryIndex) {
                 thumb.classList.remove('opacity-50', 'border-transparent');
-                thumb.classList.add('opacity-100', 'border-teal-500');
+                thumb.classList.add('opacity-100', 'border-blue-500');
                 thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             } else {
                 thumb.classList.add('opacity-50', 'border-transparent');
-                thumb.classList.remove('opacity-100', 'border-teal-500');
+                thumb.classList.remove('opacity-100', 'border-blue-500');
             }
         }
     });

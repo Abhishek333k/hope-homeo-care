@@ -148,7 +148,7 @@ const checkVelocityBanner = () => {
         const diffHours = (parseInt(expiryStr) - new Date().getTime()) / 3600000;
         if (diffHours <= 48 && diffHours > -168) {
             remedyCard.classList.remove('hidden');
-            remedyCard.classList.remove('border-teal-200');
+            remedyCard.classList.remove('border-blue-200');
             remedyCard.classList.add('border-amber-400', 'border-2');
             
             let banner = document.getElementById('velocity-banner');
@@ -231,8 +231,8 @@ const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
                     const p = doc.data();
                     html += `
                         <button onclick="window.selectProfile('${p.name}', '${currentCleanPhone}')" 
-                            class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-500 hover:shadow-md transition-all w-32 md:w-36 group">
-                            <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                            class="flex flex-col items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-blue-500 hover:shadow-md transition-all w-32 md:w-36 group">
+                            <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl font-bold mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                 ${p.name.charAt(0).toUpperCase()}
                             </div>
                             <span class="font-semibold text-slate-700 truncate w-full text-center leading-tight">${p.name}</span>
@@ -434,7 +434,7 @@ const loadClinicalFeed = async () => {
 
             if (item._type === 'appointment') {
                 const isAddressed = item.status === 'addressed';
-                const statusColor = isAddressed ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100';
+                const statusColor = isAddressed ? 'text-blue-600 bg-blue-50 border-blue-100' : 'text-amber-600 bg-amber-50 border-amber-100';
                 const statusText = isAddressed ? 'Confirmed / Addressed' : 'Pending Review';
                 
                 // Privacy Guard
@@ -442,7 +442,7 @@ const loadClinicalFeed = async () => {
                 if (isAddressed) {
                     if (item.remedy || item.notes) {
                         privateNote = `
-                        <div class="mt-4 p-4 bg-teal-50 border border-teal-100 rounded-xl text-teal-900 text-sm">
+                        <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-blue-900 text-sm">
                             <p class="font-bold mb-1 flex items-center gap-1"><span class="material-icons-round text-[16px]">health_and_safety</span> Clinical Notes:</p>
                             <p class="whitespace-pre-wrap">${item.notes || 'Remedy prescribed: ' + (item.remedy || 'Check active dosage.')}</p>
                         </div>`;
@@ -451,8 +451,8 @@ const loadClinicalFeed = async () => {
                     // Set Remedy Card if applicable
                     if (!activeRemedySet && (item.remedy || item.dosage || item.diet)) {
                         remedyDetails.innerHTML = `
-                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-teal-800 text-xl">${item.remedy || '--'}</p></div>
-                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-teal-800 text-xl">${item.dosage || '--'}</p></div>
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-blue-800 text-xl">${item.remedy || '--'}</p></div>
+                            <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-blue-800 text-xl">${item.dosage || '--'}</p></div>
                             <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dietary Rules</p><p class="font-bold text-rose-500 text-base leading-snug">${item.diet || 'No specific restrictions'}</p></div>
                         `;
                         remedyCard.classList.remove('hidden');
@@ -478,7 +478,7 @@ const loadClinicalFeed = async () => {
 
                         const diffHours = (expiryDate - new Date()) / 3600000;
                         if (diffHours <= 48 && diffHours > -168) {
-                            remedyCard.classList.remove('border-teal-200');
+                            remedyCard.classList.remove('border-blue-200');
                             remedyCard.classList.add('border-amber-400', 'border-2');
                             
                             let banner = document.getElementById('velocity-banner');
@@ -496,7 +496,7 @@ const loadClinicalFeed = async () => {
                             }
                         } else {
                             remedyCard.classList.remove('border-amber-400', 'border-2');
-                            remedyCard.classList.add('border-teal-200');
+                            remedyCard.classList.add('border-blue-200');
                             const banner = document.getElementById('velocity-banner');
                             if (banner) banner.remove();
                         }
@@ -506,7 +506,7 @@ const loadClinicalFeed = async () => {
                     if (item.date) {
                         const escapedSymptoms = (item.symptoms || 'General Checkup').replace(/'/g, "\\'");
                         gcalBtn = `
-                            <button onclick="window.generateGoogleCalendarLink('${item.date}', '${escapedSymptoms}')" class="add-to-calendar-btn shrink-0 text-teal-600 border border-teal-200 hover:bg-teal-50 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1">
+                            <button onclick="window.generateGoogleCalendarLink('${item.date}', '${escapedSymptoms}')" class="add-to-calendar-btn shrink-0 text-blue-600 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1">
                                 <span class="material-icons-round text-[14px]">calendar_add_on</span> Add to Calendar
                             </button>
                         `;
@@ -523,9 +523,9 @@ const loadClinicalFeed = async () => {
                 html += `
                     <div class="relative group">
                         <!-- Timeline Dot -->
-                        <div class="absolute -left-[41px] top-6 w-4 h-4 bg-white border-4 border-slate-200 rounded-full group-hover:border-teal-500 transition-colors z-10 box-content"></div>
+                        <div class="absolute -left-[41px] top-6 w-4 h-4 bg-white border-4 border-slate-200 rounded-full group-hover:border-blue-500 transition-colors z-10 box-content"></div>
                         
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-default relative overflow-hidden">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-default relative overflow-hidden">
                             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
                                 <div>
                                     <div class="flex items-center gap-3 mb-2 flex-wrap">
@@ -535,7 +535,7 @@ const loadClinicalFeed = async () => {
                                     <h4 class="font-bold text-slate-800 text-lg mb-1">${item.date || dateObj.toDateString()} at ${item.time || 'N/A'}</h4>
                                     <p class="text-sm text-slate-600 font-medium">Reason: ${item.symptoms || 'N/A'}</p>
                                 </div>
-                                <button onclick="window.openInternalBooking()" class="shrink-0 text-teal-600 bg-teal-50 hover:bg-teal-600 hover:text-white border border-teal-100 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1 w-max h-max">
+                                <button onclick="window.openInternalBooking()" class="shrink-0 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-100 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1 w-max h-max">
                                     <span class="material-icons-round text-[16px]">event_repeat</span> Follow-up
                                 </button>
                             </div>
@@ -550,8 +550,8 @@ const loadClinicalFeed = async () => {
                 // Fallback active remedy
                 if (!activeRemedySet && (item.remedy || item.dosage || item.diet)) {
                     remedyDetails.innerHTML = `
-                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-teal-800 text-xl">${item.remedy || '--'}</p></div>
-                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-teal-800 text-xl">${item.dosage || '--'}</p></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Medicine</p><p class="font-bold text-blue-800 text-xl">${item.remedy || '--'}</p></div>
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dosage</p><p class="font-bold text-blue-800 text-xl">${item.dosage || '--'}</p></div>
                         <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dietary Rules</p><p class="font-bold text-rose-500 text-base leading-snug">${item.diet || 'No specific restrictions'}</p></div>
                     `;
                     remedyCard.classList.remove('hidden');
@@ -577,7 +577,7 @@ const loadClinicalFeed = async () => {
 
                     const diffHours = (expiryDate - new Date()) / 3600000;
                     if (diffHours <= 48 && diffHours > -168) {
-                        remedyCard.classList.remove('border-teal-200');
+                        remedyCard.classList.remove('border-blue-200');
                         remedyCard.classList.add('border-amber-400', 'border-2');
                         
                         let banner = document.getElementById('velocity-banner');
@@ -595,7 +595,7 @@ const loadClinicalFeed = async () => {
                         }
                     } else {
                         remedyCard.classList.remove('border-amber-400', 'border-2');
-                        remedyCard.classList.add('border-teal-200');
+                        remedyCard.classList.add('border-blue-200');
                         const banner = document.getElementById('velocity-banner');
                         if (banner) banner.remove();
                     }
@@ -604,15 +604,15 @@ const loadClinicalFeed = async () => {
                 html += `
                     <div class="relative ml-8 group">
                         <!-- Thread connecting line -->
-                        <div class="absolute -left-[30px] top-8 w-6 h-px bg-slate-300 group-hover:bg-teal-300 transition-colors"></div>
+                        <div class="absolute -left-[30px] top-8 w-6 h-px bg-slate-300 group-hover:bg-blue-300 transition-colors"></div>
                         <!-- Thread Dot -->
-                        <div class="absolute -left-[33px] top-[29px] w-1.5 h-1.5 bg-slate-400 rounded-full box-content border-[3px] border-slate-50 group-hover:bg-teal-400 transition-colors z-10"></div>
+                        <div class="absolute -left-[33px] top-[29px] w-1.5 h-1.5 bg-slate-400 rounded-full box-content border-[3px] border-slate-50 group-hover:bg-blue-400 transition-colors z-10"></div>
                         
-                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group-hover:border-teal-300 transition-colors">
-                            <div class="absolute left-0 top-0 w-1.5 h-full bg-teal-400"></div>
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group-hover:border-blue-300 transition-colors">
+                            <div class="absolute left-0 top-0 w-1.5 h-full bg-blue-400"></div>
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="material-icons-round text-teal-500 text-[18px]">speaker_notes</span>
-                                <p class="text-[10px] font-bold text-teal-700 uppercase tracking-widest">${item.dateStr || dateObj.toDateString()} • ${item.author || 'Dr. K. Nikhil Joshua'}</p>
+                                <span class="material-icons-round text-blue-500 text-[18px]">speaker_notes</span>
+                                <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest">${item.dateStr || dateObj.toDateString()} • ${item.author || 'Dr. K. Nikhil Joshua'}</p>
                                 <span class="ml-auto text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">${caseId}</span>
                             </div>
                             <p class="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm font-medium">${item.text}</p>
@@ -763,10 +763,10 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
                     const chipClass = isBlocked 
                         ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
                         : (active 
-                            ? 'bg-teal-600 text-white shadow-md border-teal-600 ring-2 ring-teal-200 z-10' 
+                            ? 'bg-blue-600 text-white shadow-md border-blue-600 ring-2 ring-blue-200 z-10' 
                             : (isRecommended 
                                 ? 'bg-white text-slate-700 border-amber-400 shadow-sm' 
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-teal-500 rounded-lg'));
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-500 rounded-lg'));
 
                     const badge = isRecommended ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-pulse z-20">NEXT</span>` : '';
 
@@ -798,16 +798,16 @@ const applyDynamicValidation = (dateInputId, hiddenInputId) => {
         // Isolate State Mutation
         const chips = document.querySelectorAll('.chip-time-int');
         chips.forEach(chip => {
-            chip.classList.remove('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+            chip.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
             if (!chip.disabled) {
-                chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500');
+                chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500');
             }
         });
 
         if (event && event.currentTarget) {
             const currentChip = event.currentTarget;
-            currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-teal-500', 'border-amber-400');
-            currentChip.classList.add('bg-teal-600', 'text-white', 'shadow-md', 'border-teal-600', 'ring-2', 'ring-teal-200', 'z-10');
+            currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500', 'border-amber-400');
+            currentChip.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
             
             const badge = currentChip.querySelector('span');
             if (badge) badge.remove();
