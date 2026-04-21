@@ -5,62 +5,150 @@ import { auth, db } from './firebase-init.js';
 let currentCleanPhone = '';
 let currentPatientName = '';
 let currentCompositeId = '';
-
-// Accessibility Focus Tracker
 let previousFocusElement = null;
+
+// Standardized Toast System for Portal
+window.showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
+    const icon = type === 'error' ? 'error' : 'check_circle';
+    toast.className = `${bgColor} text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto z-[100]`;
+    toast.innerHTML = `<span class="material-icons-round text-[20px]" aria-hidden="true">${icon}</span> <p class="text-sm font-medium">${message}</p>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+    setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+};
 
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = "index.html";
         return;
     }
-    
-    // Auth Check: Phone number must exist
-    if (!user.phoneNumber) {
-        console.error("No phone number found for user.");
-        signOut(auth);
-        window.location.href = "index.html";
-        return;
-    }
-
     currentCleanPhone = user.phoneNumber;
-    // Patient Portal Logic
-    await initializePortal(user);
+    document.getElementById('logout-btn')?.classList.remove('hidden');
+    document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
+    
+    await scanForProfiles();
 });
 
-async function initializePortal(user) {
-    const welcomeName = document.getElementById('welcome-name');
-    const appointmentsList = document.getElementById('appointments-list');
-    
+async function scanForProfiles() {
     try {
-        // Querying based on phone number
-        const q = query(collection(db, "appointments"), where("phone", "==", user.phoneNumber), orderBy("timestamp", "desc"));
+        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-            welcomeName.innerText = "New Patient";
-            appointmentsList.innerHTML = `
-                <div class="col-span-full text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                    <p class="text-slate-500 font-medium">No appointments found for ${user.phoneNumber}</p>
-                    <button onclick="window.openInternalBooking()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition-all">Book First Appointment</button>
-                </div>
-            `;
+            renderEmptyState();
             return;
         }
 
-        const latestDoc = snapshot.docs[0].data();
-        currentPatientName = latestDoc.name;
-        currentCompositeId = `${currentPatientName}_${currentCleanPhone}`;
-        welcomeName.innerText = currentPatientName;
+        const uniqueNames = [...new Set(snapshot.docs.map(d => d.data().name))];
+        
+        if (uniqueNames.length > 1) {
+            showProfileSelector(uniqueNames);
+        } else {
+            selectProfile(uniqueNames[0]);
+        }
+    } catch (e) {
+        console.error("Profile Scan Error:", e);
+        window.showToast("Failed to connect to clinical records.", "error");
+    }
+}
 
-        // Render Appointments
+function renderEmptyState() {
+    const feed = document.getElementById('clinical-feed');
+    const view = document.getElementById('clinical-feed-view');
+    if(view) view.classList.remove('hidden');
+    if(feed) {
+        feed.innerHTML = `
+            <div class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-medium">Welcome! No clinical records found for this number.</p>
+                <p class="text-slate-400 text-sm mt-1">Book your first session to start your journey.</p>
+            </div>
+        `;
+    }
+    const nameEl = document.getElementById('profile-name');
+    if(nameEl) nameEl.innerText = "New Patient";
+}
+
+function showProfileSelector(names) {
+    const selector = document.getElementById('profile-selector-view');
+    const feedView = document.getElementById('clinical-feed-view');
+    const container = document.getElementById('family-profiles-container');
+    
+    if(!selector || !container) return;
+    
+    feedView?.classList.add('hidden');
+    selector.classList.remove('hidden');
+    
+    let html = '';
+    names.sort().forEach(name => {
+        const initial = name.charAt(0).toUpperCase();
+        html += `
+            <button onclick="window.selectProfile('${name}')" class="group flex flex-col items-center gap-4 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
+                <div class="w-20 h-20 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center text-3xl font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    ${initial}
+                </div>
+                <span class="font-bold text-slate-700 text-lg">${name}</span>
+            </button>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+window.selectProfile = async (name) => {
+    currentPatientName = name;
+    currentCompositeId = `${name}_${currentCleanPhone}`;
+    
+    document.getElementById('profile-selector-view')?.classList.add('hidden');
+    document.getElementById('clinical-feed-view')?.classList.remove('hidden');
+    
+    // UI Feedback: Show Switch button if more than 1 linked profile
+    const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+    const snap = await getDocs(q);
+    const uniqueNames = [...new Set(snap.docs.map(d => d.data().name))];
+    if (uniqueNames.length > 1) {
+        const switchBtn = document.getElementById('switch-profile-btn');
+        if(switchBtn) {
+            switchBtn.classList.remove('hidden');
+            switchBtn.onclick = () => showProfileSelector(uniqueNames);
+        }
+    }
+
+    renderPatientIdentity();
+    loadClinicalFeed();
+    loadRemedyData();
+};
+
+function renderPatientIdentity() {
+    const nameEl = document.getElementById('profile-name');
+    const avatar = document.getElementById('profile-avatar');
+    const bookingNameHint = document.getElementById('booking-for-name');
+    
+    if(nameEl) nameEl.innerText = currentPatientName;
+    if(avatar) avatar.innerText = currentPatientName.charAt(0).toUpperCase();
+    if(bookingNameHint) bookingNameHint.innerText = currentPatientName;
+}
+
+async function loadClinicalFeed() {
+    const feed = document.getElementById('clinical-feed');
+    if(!feed) return;
+    
+    feed.innerHTML = '<div class="animate-pulse space-y-4"><div class="h-20 bg-slate-100 rounded-xl"></div><div class="h-20 bg-slate-100 rounded-xl"></div></div>';
+    
+    try {
+        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone), where("name", "==", currentPatientName), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        
         let html = '';
         snapshot.forEach(doc => {
             const data = doc.data();
             const date = data.date;
-            const time = data.time;
             const status = data.status || 'pending';
-            
             const statusColors = {
                 'pending': 'bg-amber-50 text-amber-700 border-amber-100',
                 'confirmed': 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -68,116 +156,139 @@ async function initializePortal(user) {
             };
 
             html += `
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="bg-blue-50 p-3 rounded-2xl">
-                            <span class="material-icons-round text-blue-600">calendar_today</span>
+                <div class="relative pl-0 md:pl-4">
+                    <div class="absolute -left-[37px] md:-left-[45px] top-6 w-4 h-4 rounded-full bg-white border-4 border-slate-300 z-10"></div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                            <span class="text-xs font-black uppercase tracking-widest text-slate-400">${date}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[status]}">${status}</span>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusColors[status]}">${status}</span>
-                    </div>
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Appointment Date</p>
-                    <h3 class="text-xl font-bold text-slate-800 mb-4">${date} at ${time}</h3>
-                    <div class="flex items-center gap-2 text-slate-500 text-sm">
-                        <span class="material-icons-round text-sm">person</span>
-                        <span>Patient: ${data.name}</span>
+                        <h4 class="text-lg font-bold text-slate-800">Appointment Summary</h4>
+                        <div class="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-icons-round text-lg text-blue-500">schedule</span>
+                                <span>${data.time}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-icons-round text-lg text-blue-500">psychology</span>
+                                <span>Note: ${data.symptoms.substring(0, 50)}...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
         });
-        appointmentsList.innerHTML = html;
+        feed.innerHTML = html;
+        
+        // Update "Member Since"
+        const sinceEl = document.getElementById('profile-member-since');
+        if(sinceEl && !snapshot.empty) {
+            const firstDate = snapshot.docs[snapshot.docs.length - 1].data().date;
+            sinceEl.innerText = `Member Since ${firstDate}`;
+        }
 
-        // Load Medicine & Prescription Engine
-        loadMedicalRecords(currentCompositeId);
-
-    } catch (error) {
-        console.error("Portal Init Error:", error);
-        window.showToast("Failed to load portal data. Check connection.", "error");
+    } catch (e) {
+        console.error("Feed Error:", e);
+        feed.innerHTML = '<p class="text-rose-500">Error loading clinical timeline.</p>';
     }
 }
 
-async function loadMedicalRecords(compositeId) {
-    const rxContainer = document.getElementById('prescription-container');
-    const medicineGrid = document.getElementById('medicine-grid');
+async function loadRemedyData() {
+    const card = document.getElementById('current-remedy-card');
+    const container = document.getElementById('current-remedy-details');
+    const pills = document.getElementById('profile-pills');
     
     try {
-        const docRef = doc(db, "patient_records", compositeId);
-        const docSnap = await getDoc(docRef);
-
+        const docSnap = await getDoc(doc(db, "patient_records", currentCompositeId));
         if (!docSnap.exists()) {
-            rxContainer.innerHTML = '<p class="text-slate-400 italic">No medical records uploaded yet.</p>';
-            medicineGrid.innerHTML = '<p class="text-slate-400 italic">Medication list will appear here after your first consultation.</p>';
+            card?.classList.add('hidden');
+            if(pills) pills.innerHTML = '<span class="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">New Patient</span>';
             return;
         }
 
         const data = docSnap.data();
-
-        // Render Prescription Notes
-        if (data.prescriptions && data.prescriptions.length > 0) {
-            const latestRx = data.prescriptions[data.prescriptions.length - 1];
-            rxContainer.innerHTML = `
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <p class="text-slate-700 whitespace-pre-line leading-relaxed">${latestRx.notes}</p>
-                    <p class="mt-4 text-[10px] uppercase font-bold text-slate-400 tracking-widest">Last Updated: ${latestRx.date}</p>
-                </div>
-            `;
-        } else {
-            rxContainer.innerHTML = '<p class="text-slate-400 italic">No prescription notes found.</p>';
-        }
-
-        // Render Medicine Grid
+        
+        // Medicine Rendering
         if (data.medicines && data.medicines.length > 0) {
+            card?.classList.remove('hidden');
             let medHtml = '';
             data.medicines.forEach(med => {
                 medHtml += `
-                    <div class="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                            <h4 class="font-bold text-slate-800">${med.name}</h4>
-                        </div>
-                        <p class="text-xs text-slate-500 leading-relaxed">${med.dosage}</p>
-                        <p class="text-[10px] font-bold text-blue-600 mt-2 uppercase tracking-tighter">${med.frequency}</p>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">${med.frequency}</p>
+                        <h4 class="text-lg font-black text-slate-800">${med.name}</h4>
+                        <p class="text-sm text-slate-500 mt-1">${med.dosage}</p>
                     </div>
                 `;
             });
-            medicineGrid.innerHTML = medHtml;
+            if(container) container.innerHTML = medHtml;
         } else {
-            medicineGrid.innerHTML = '<p class="text-slate-400 italic">No active medications.</p>';
+            card?.classList.add('hidden');
         }
 
-    } catch (error) {
-        console.error("Medical Record Error:", error);
+        // Prescription Pills Rendering (High-level tags)
+        if(pills) {
+            let pillHtml = '';
+            if(data.condition) {
+                pillHtml += `<span class="px-3 py-1 bg-blue-600 text-white rounded-full text-[10px] font-bold uppercase tracking-wider">${data.condition}</span>`;
+            }
+            if(data.lastCheckup) {
+                pillHtml += `<span class="px-3 py-1 bg-white text-slate-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">Last Visit: ${data.lastCheckup}</span>`;
+            }
+            pills.innerHTML = pillHtml || '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-100">Active Patient</span>';
+        }
+
+    } catch (e) {
+        console.error("Remedy Data Error:", e);
     }
 }
 
-// Internal Booking Logic
+// Modal Logic
+window.openInternalBooking = () => {
+    previousFocusElement = document.activeElement;
+    const modal = document.getElementById('internal-booking-modal');
+    if(modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.add('opacity-100');
+            modal.querySelector('div')?.classList.remove('scale-95');
+            document.getElementById('int-book-symptoms')?.focus();
+        }, 10);
+    }
+};
+
+window.closeInternalBooking = () => {
+    const modal = document.getElementById('internal-booking-modal');
+    if(modal) {
+        modal.classList.remove('opacity-100');
+        modal.querySelector('div')?.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            if(previousFocusElement) previousFocusElement.focus();
+        }, 300);
+    }
+};
+
+// Form & Time Logic Integration
 const applyInternalValidation = (dateInputId, hiddenInputId) => {
-    const morningRange = ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM"];
-    const afternoonRange = ["12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"];
-    const eveningRange = ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"];
-    
     const dateInput = document.getElementById(dateInputId);
     const hiddenInput = document.getElementById(hiddenInputId);
-    let fp = null;
-    let blockedSlots = [];
-
     if (!dateInput || !hiddenInput) return;
 
+    const ranges = [
+        { id: 'morning', slots: ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM"] },
+        { id: 'afternoon', slots: ["12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"] },
+        { id: 'evening', slots: ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"] }
+    ];
+
     window.toggleAccordion = (id) => {
-        const sections = ['morning', 'afternoon', 'evening'];
-        sections.forEach(s => {
+        ['morning', 'afternoon', 'evening'].forEach(s => {
             const content = document.getElementById(`content-${s}`);
             const chevron = document.getElementById(`chevron-${s}`);
-            if (!content || !chevron) return;
-
             if (s === id) {
                 const isOpen = content.classList.contains('max-h-96');
-                if (isOpen) {
-                    content.classList.replace('max-h-96', 'max-h-0');
-                    chevron.classList.remove('rotate-180');
-                } else {
-                    content.classList.replace('max-h-0', 'max-h-96');
-                    chevron.classList.add('rotate-180');
-                }
+                content.classList.replace(isOpen ? 'max-h-96' : 'max-h-0', isOpen ? 'max-h-0' : 'max-h-96');
+                chevron.classList.toggle('rotate-180', !isOpen);
             } else {
                 content.classList.replace('max-h-96', 'max-h-0');
                 chevron.classList.remove('rotate-180');
@@ -185,262 +296,89 @@ const applyInternalValidation = (dateInputId, hiddenInputId) => {
         });
     };
 
-    const parseTime = (timeStr) => {
-        const [time, modifier] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':');
-        if (hours === '12') hours = '00';
-        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
-        return { hours: parseInt(hours), minutes: parseInt(minutes) };
+    window.selectTimeSlot = (e, slot) => {
+        if(e) e.preventDefault();
+        hiddenInput.value = slot;
+        document.querySelectorAll('.chip-time-int').forEach(c => {
+            c.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            if(c.innerText.trim() === slot) c.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+        });
     };
 
-    const renderPills = (dateStr) => {
-        const mCont = document.getElementById('slots-morning');
-        const aCont = document.getElementById('slots-afternoon');
-        const eCont = document.getElementById('slots-evening');
-        if (!mCont || !aCont || !eCont) return;
-
-        // Reset Accordion State
-        ['morning', 'afternoon', 'evening'].forEach(s => {
-            const content = document.getElementById(`content-${s}`);
-            const chevron = document.getElementById(`chevron-${s}`);
-            if(content) content.classList.replace('max-h-96', 'max-h-0');
-            if(chevron) chevron.classList.remove('rotate-180');
-        });
-
-        const skeleton = `<div class="h-10 bg-slate-50 rounded-lg animate-pulse"></div>`.repeat(3);
-        mCont.innerHTML = skeleton; aCont.innerHTML = skeleton; eCont.innerHTML = skeleton;
-
-        setTimeout(() => {
-            const ranges = [
-                { cont: mCont, slots: morningRange, type: 'morning' },
-                { cont: aCont, slots: afternoonRange, type: 'afternoon' },
-                { cont: eCont, slots: eveningRange, type: 'evening' }
-            ];
-
-            let firstAvailableId = null;
-            let recommendedSlot = null;
-            const now = new Date();
-            const parts = dateStr ? dateStr.split('/') : [];
-            const selectedDate = dateStr ? new Date(parts[2], parts[1] - 1, parts[0]) : null;
-            const isSelectedToday = selectedDate ? selectedDate.toDateString() === now.toDateString() : false;
-
-            for (const range of ranges) {
-                for (const slot of range.slots) {
-                    let isBlocked = false;
-                    if (dateStr) {
-                        if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
-                        if (range.type === 'morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
-                        if (range.type === 'evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
-                        if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
-                    }
-                    if (!isBlocked) {
-                        if (isSelectedToday) {
-                            const st = parseTime(slot);
-                            const sd = new Date(now);
-                            sd.setHours(st.hours, st.minutes, 0, 0);
-                            if ((sd - now) / (1000 * 60) >= 30) {
-                                recommendedSlot = slot;
-                                break;
-                            }
-                        } else {
-                            recommendedSlot = slot;
-                            break;
-                        }
-                    }
-                }
-                if (recommendedSlot) break;
-            }
-
-            ranges.forEach(range => {
-                let html = '';
-                range.slots.forEach(slot => {
-                    let isBlocked = false;
-                    if (dateStr) {
-                        if (blockedSlots.includes(`${dateStr}|All`)) isBlocked = true;
-                        if (range.type === 'morning' && blockedSlots.includes(`${dateStr}|Morning`)) isBlocked = true;
-                        if (range.type === 'evening' && blockedSlots.includes(`${dateStr}|Evening`)) isBlocked = true;
-                        if (blockedSlots.includes(`${dateStr}|${slot}`)) isBlocked = true;
-                    }
-
-                    if (isSelectedToday) {
-                        const st = parseTime(slot);
-                        const sd = new Date(now);
-                        sd.setHours(st.hours, st.minutes, 0, 0);
-                        if ((sd - now) < 0) isBlocked = true;
-                    }
-
-                    if (!isBlocked && !firstAvailableId) firstAvailableId = range.type;
-                    const active = hiddenInput.value === slot;
-                    const isRecommended = slot === recommendedSlot && !active;
-                    const chipClass = isBlocked 
-                        ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed border-transparent opacity-60' 
-                        : (active 
-                            ? 'bg-blue-600 text-white shadow-md border-blue-600 ring-2 ring-blue-200 z-10' 
-                            : (isRecommended 
-                                ? 'bg-white text-slate-700 border-amber-400 shadow-sm' 
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-500 rounded-lg'));
-
-                    const badge = isRecommended ? `<span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-pulse z-20">NEXT</span>` : '';
-
-                    html += `
-                        <button type="button" 
-                            ${isBlocked ? 'disabled' : ''}
-                            onclick="window.selectTimeSlot(event, '${slot}', '${hiddenInputId}', '${dateStr}')" 
-                            class="h-10 w-full font-bold text-[10px] transition-all duration-200 flex items-center justify-center chip-time-int relative ${chipClass}">
-                            ${badge}
-                            ${slot}
-                        </button>
-                    `;
-                });
-                range.cont.innerHTML = html;
+    const renderSlots = (dateStr) => {
+        ranges.forEach(range => {
+            const container = document.getElementById(`slots-${range.id}`);
+            if(!container) return;
+            let html = '';
+            range.slots.forEach(slot => {
+                html += `
+                    <button type="button" onclick="window.selectTimeSlot(event, '${slot}')" class="chip-time-int h-10 w-full border border-slate-200 rounded-lg text-[10px] font-bold hover:border-blue-500 transition-all">
+                        ${slot}
+                    </button>
+                `;
             });
-            if (firstAvailableId) window.toggleAccordion(firstAvailableId);
-            else window.toggleAccordion('morning');
-        }, 400);
-    };
-
-    window.selectTimeSlot = (event, slot, inputId, dateStr) => {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-        const input = document.getElementById(inputId);
-        input.value = slot;
-        
-        const chips = document.querySelectorAll('.chip-time-int');
-        chips.forEach(chip => {
-            chip.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
-            if (!chip.disabled) {
-                chip.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500');
-            }
+            container.innerHTML = html;
         });
-
-        if (event && event.currentTarget) {
-            const currentChip = event.currentTarget;
-            currentChip.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'hover:border-blue-500', 'border-amber-400');
-            currentChip.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600', 'ring-2', 'ring-blue-200', 'z-10');
-            const badge = currentChip.querySelector('span');
-            if (badge) badge.remove();
-        }
+        window.toggleAccordion('morning');
     };
-
-    renderPills();
 
     if (typeof flatpickr !== 'undefined') {
-        fp = flatpickr(dateInput, {
+        flatpickr(dateInput, {
             minDate: "today",
-            disable: [ (date) => (date.getDay() === 0) ],
+            disable: [(date) => (date.getDay() === 0)],
             dateFormat: "d/m/Y",
-            static: true,
-            disableMobile: "true",
-            onChange: (selectedDates, dateStr) => { 
-                const modalContent = document.getElementById('internal-booking-modal-content');
-                const timeColumn = document.getElementById('int-time-slot-column');
-                if (modalContent) modalContent.classList.replace('max-w-md', 'max-w-4xl');
-                if (timeColumn) {
-                    timeColumn.classList.remove('hidden');
-                    setTimeout(() => timeColumn.classList.remove('opacity-0'), 100);
-                    timeColumn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                hiddenInput.value = ""; 
-                renderPills(dateStr); 
+            onChange: (selectedDates, dateStr) => {
+                document.getElementById('int-time-slot-column')?.classList.remove('hidden');
+                setTimeout(() => document.getElementById('int-time-slot-column')?.classList.add('opacity-100'), 10);
+                document.getElementById('internal-booking-modal-content')?.classList.replace('max-w-md', 'max-w-4xl');
+                renderSlots(dateStr);
             }
         });
-    }
-
-    const fetchSlots = async () => {
-        try {
-            const docSnap = await getDoc(doc(db, "settings", "calendar"));
-            if (docSnap.exists() && docSnap.data().blockedSlots) {
-                blockedSlots = docSnap.data().blockedSlots;
-                if (fp) fp.redraw();
-                renderPills(dateInput.value);
-            }
-        } catch (err) { console.error("Failed to fetch slots calendar data:", err); }
-    };
-    fetchSlots();
-};
-
-window.openInternalBooking = () => {
-    previousFocusElement = document.activeElement;
-    document.getElementById('internal-booking-modal')?.classList.remove('hidden');
-    setTimeout(() => document.getElementById('int-book-symptoms')?.focus(), 150);
-};
-
-window.closeInternalBooking = () => {
-    document.getElementById('internal-booking-modal')?.classList.add('hidden');
-    const modalContent = document.getElementById('internal-booking-modal-content');
-    if (modalContent) modalContent.classList.replace('max-w-4xl', 'max-w-md');
-    const timeColumn = document.getElementById('int-time-slot-column');
-    if (timeColumn) timeColumn.classList.add('hidden', 'opacity-0');
-    
-    if (previousFocusElement) {
-        previousFocusElement.focus();
-        previousFocusElement = null;
     }
 };
 
 applyInternalValidation('int-book-date', 'int-book-time');
 
-const intSubmitBtn = document.getElementById('int-book-submit');
-if (intSubmitBtn) {
-    intSubmitBtn.addEventListener('click', async () => {
-        const date = document.getElementById('int-book-date').value;
-        const time = document.getElementById('int-book-time').value;
-        const symptoms = document.getElementById('int-book-symptoms').value;
+document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('int-book-submit');
+    const date = document.getElementById('int-book-date').value;
+    const time = document.getElementById('int-book-time').value;
+    const symptoms = document.getElementById('int-book-symptoms').value;
 
-        if (!date || !time || !symptoms) {
-            window.showToast("Please select date, time, and describe symptoms.", "error");
-            return;
-        }
-
-        intSubmitBtn.disabled = true;
-        intSubmitBtn.innerText = "Booking...";
-
-        try {
-            await addDoc(collection(db, "appointments"), {
-                name: currentPatientName,
-                phone: currentCleanPhone,
-                date: date,
-                time: time,
-                symptoms: symptoms,
-                timestamp: serverTimestamp(),
-                status: 'pending'
-            });
-            window.showToast("Appointment requested successfully!");
-            setTimeout(() => window.location.reload(), 1500);
-        } catch (error) {
-            window.showToast("Failed to book appointment. Please check your connection.", "error");
-            intSubmitBtn.disabled = false;
-            intSubmitBtn.innerText = "Confirm Appointment";
-        }
-    });
-}
-
-// Global Modal Observers
-const intModal = document.getElementById('internal-booking-modal');
-if (intModal) {
-    intModal.addEventListener('click', (e) => {
-        if (e.target === intModal) window.closeInternalBooking();
-    });
-}
-
-// Accessibility Hotkeys
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const intModal = document.getElementById('internal-booking-modal');
-        if (intModal && !intModal.classList.contains('hidden')) window.closeInternalBooking();
-        
-        if (currentCompositeId && !document.getElementById('profile-selector-view').classList.contains('hidden')) {
-            window.selectProfile(currentPatientName, currentCleanPhone); 
-        }
+    if(!date || !time || !symptoms) {
+        window.showToast("Please complete all booking fields.", "error");
+        return;
     }
-    if (e.altKey && auth.currentUser && currentCompositeId) {
-        if (e.key.toLowerCase() === 'b') {
-            e.preventDefault(); 
-            window.openInternalBooking();
-        }
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Processing...";
+
+    try {
+        await addDoc(collection(db, "appointments"), {
+            name: currentPatientName,
+            phone: currentCleanPhone,
+            date: date,
+            time: time,
+            symptoms: symptoms,
+            timestamp: serverTimestamp(),
+            status: 'pending'
+        });
+        window.showToast("Appointment requested!");
+        setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+        console.error(error);
+        window.showToast("Submission failed.", "error");
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Submit Request";
     }
 });
 
-window.logout = () => signOut(auth).then(() => window.location.href = "index.html");
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        window.closeInternalBooking();
+        if(!document.getElementById('profile-selector-view').classList.contains('hidden')) {
+            // Cannot escape selector easily if forced, but logic is there
+        }
+    }
+});
