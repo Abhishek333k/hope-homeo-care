@@ -1,13 +1,11 @@
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { auth, db } from './firebase-init.js';
 
 let currentCleanPhone = '';
 let currentPatientName = '';
 let globalAppointments = [];
-let previousFocusElement = null;
 
-// Standardized Toast System for Portal
 window.showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -19,270 +17,247 @@ window.showToast = (message, type = 'success') => {
     container.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
     setTimeout(() => {
-        toast.classList.add('translate-y-10', 'opacity-0');
+        toast.classList.add('opacity-0', 'translate-y-10');
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 };
 
+// --- STATE MANAGEMENT ---
 onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-        window.location.href = "index.html";
-        return;
+    if (user) {
+        currentCleanPhone = user.phoneNumber.replace('+91', '');
+        document.getElementById('logout-btn').classList.remove('hidden');
+        document.getElementById('switch-profile-btn').classList.remove('hidden');
+        await fetchFamilyProfiles(currentCleanPhone);
+    } else {
+        window.location.href = 'index.html';
     }
-    
-    // Clean phone number for query
-    currentCleanPhone = user.phoneNumber.replace('+91', '');
-    
-    document.getElementById('logout-btn')?.classList.remove('hidden');
-    document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
-    
-    await fetchFamilyProfiles(currentCleanPhone);
 });
 
-async function fetchFamilyProfiles(phone) {
+// --- PROFILE GENERATOR ---
+const fetchFamilyProfiles = async (phone) => {
     try {
         const q = query(collection(db, "appointments"), where("phone", "==", phone));
         const snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-            renderEmptyFeed();
-            return;
-        }
-
-        // Store in-memory snapshot for self-generation
         globalAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        const uniqueNames = [...new Set(globalAppointments.map(app => app.name))];
+        // Mathematically extract unique names
+        const uniqueNames = [...new Set(globalAppointments.map(app => app.name).filter(Boolean))];
         
-        if (uniqueNames.length > 1) {
-            showProfileSelector(uniqueNames);
-        }
+        const selectorView = document.getElementById('profile-selector-view');
+        const feedView = document.getElementById('clinical-feed-view');
+        const container = document.getElementById('family-profiles-container');
         
-        // Automatically load first profile by default
-        window.loadTimeline(uniqueNames[0]);
-
-    } catch (e) {
-        console.error("Fetch Error:", e);
-        window.showToast("Connection error.", "error");
-    }
-}
-
-function renderEmptyFeed() {
-    const feed = document.getElementById('clinical-feed');
-    const view = document.getElementById('clinical-feed-view');
-    if(view) view.classList.remove('hidden');
-    if(feed) {
-        feed.innerHTML = `
-            <div class="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="material-icons-round text-slate-400 text-3xl">history</span>
-                </div>
-                <p class="text-slate-500 font-bold text-lg">No previous appointments found</p>
-                <p class="text-slate-400 text-sm mt-1">Book your first session to start your history.</p>
-            </div>
-        `;
-    }
-    const nameEl = document.getElementById('profile-name');
-    if(nameEl) nameEl.innerText = "Welcome";
-}
-
-function showProfileSelector(names) {
-    const selector = document.getElementById('profile-selector-view');
-    const feedView = document.getElementById('clinical-feed-view');
-    const container = document.getElementById('family-profiles-container');
-    
-    if(!selector || !container) return;
-    
-    feedView?.classList.add('hidden');
-    selector.classList.remove('hidden');
-    
-    let html = '';
-    names.forEach(name => {
-        const initial = name.charAt(0).toUpperCase();
-        html += `
-            <button onclick="window.loadTimeline('${name}')" class="group flex flex-col items-center gap-4 p-6 rounded-3xl hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-slate-100">
-                <div class="w-20 h-20 bg-slate-100 text-slate-800 rounded-full flex items-center justify-center text-3xl font-black group-hover:bg-navy-900 group-hover:text-white transition-colors">
-                    ${initial}
-                </div>
-                <span class="font-bold text-slate-700 text-lg">${name}</span>
-            </button>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-window.loadTimeline = (targetName) => {
-    currentPatientName = targetName;
-    
-    document.getElementById('profile-selector-view')?.classList.add('hidden');
-    document.getElementById('clinical-feed-view')?.classList.remove('hidden');
-    
-    renderPatientIdentity();
-    
-    const feed = document.getElementById('clinical-feed');
-    if(!feed) return;
-
-    // Filter and Sort in-memory
-    const filtered = globalAppointments
-        .filter(app => app.name === targetName)
-        .sort((a, b) => {
-            const ta = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp?.seconds || 0);
-            const tb = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp?.seconds || 0);
-            return tb - ta;
-        });
-
-    let html = '';
-    filtered.forEach(data => {
-        const status = data.status || 'pending';
-        const statusColors = {
-            'pending': 'bg-amber-50 text-amber-700 border-amber-100',
-            'confirmed': 'bg-blue-50 text-blue-700 border-blue-100',
-            'completed': 'bg-emerald-50 text-emerald-700 border-emerald-100'
-        };
-
-        const adviceHtml = (data.medicalAdvice && data.medicalAdvice.trim() !== '') ? `
-            <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
-                <span class="material-icons-round text-navy-900">medical_services</span>
-                <div>
-                    <p class="text-xs font-bold text-navy-900 uppercase tracking-widest mb-1">Medical Advice</p>
-                    <p class="text-sm text-slate-600 leading-relaxed">${data.medicalAdvice}</p>
-                </div>
-            </div>
-        ` : '';
-
-        html += `
-            <div class="relative pl-0 md:pl-4">
-                <div class="absolute -left-[37px] md:-left-[45px] top-6 w-4 h-4 rounded-full bg-white border-4 border-slate-300 z-10"></div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                        <span class="text-xs font-black uppercase tracking-widest text-slate-400">${data.date} • ${data.time}</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[status] || 'bg-slate-50 text-slate-500 border-slate-100'}">${status}</span>
+        if (uniqueNames.length === 0) {
+            // NEW USER: First Time Booking UI
+            selectorView.classList.remove('hidden');
+            feedView.classList.add('hidden');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-10 w-full">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy-100 text-navy-600 mb-4">
+                        <span class="material-icons-round text-3xl">waving_hand</span>
                     </div>
-                    <h4 class="text-lg font-bold text-slate-800">Symptom Summary</h4>
-                    <p class="text-sm text-slate-500 mt-2">${data.symptoms}</p>
-                    ${adviceHtml}
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome to Hope Homeo Care</h3>
+                    <p class="text-slate-500 mb-8">It looks like you don't have any appointments yet.</p>
+                    <div class="max-w-xs mx-auto text-left">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
+                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-navy-500 outline-none" placeholder="e.g., John Doe">
+                        <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all shadow-lg">Start Booking</button>
+                    </div>
                 </div>
-            </div>
-        `;
-    });
-    feed.innerHTML = html;
-
-    // Handle switch profile button visibility if multiple names exist
-    const uniqueNames = [...new Set(globalAppointments.map(app => app.name))];
-    if (uniqueNames.length > 1) {
-        const switchBtn = document.getElementById('switch-profile-btn');
-        if(switchBtn) {
-            switchBtn.classList.remove('hidden');
-            switchBtn.onclick = () => showProfileSelector(uniqueNames);
+            `;
+        } else if (uniqueNames.length === 1) {
+            // Auto-load single profile
+            window.loadTimeline(uniqueNames[0]);
+        } else {
+            // Netflix-style Multi-Profile UI
+            selectorView.classList.remove('hidden');
+            feedView.classList.add('hidden');
+            container.innerHTML = uniqueNames.map(name => `
+                <button onclick="window.loadTimeline('${name}')" class="flex flex-col items-center group transition-transform hover:scale-105">
+                    <div class="w-24 h-24 rounded-full bg-navy-50 border-4 border-white shadow-lg flex items-center justify-center text-navy-900 text-3xl font-black mb-3 group-hover:bg-navy-100 transition-colors">${name.charAt(0).toUpperCase()}</div>
+                    <span class="text-lg font-bold text-slate-700">${name}</span>
+                </button>
+            `).join('');
         }
+    } catch (e) {
+        console.error("Profile Fetch Error:", e);
+        window.showToast("Failed to fetch records. Check connection.", "error");
     }
 };
 
-function renderPatientIdentity() {
-    const nameEl = document.getElementById('profile-name');
-    const avatar = document.getElementById('profile-avatar');
-    const bookingNameHint = document.getElementById('booking-for-name');
-    
-    if(nameEl) nameEl.innerText = currentPatientName;
-    if(avatar) avatar.innerText = currentPatientName.charAt(0).toUpperCase();
-    if(bookingNameHint) bookingNameHint.innerText = currentPatientName;
-}
+window.startFirstBooking = () => {
+    const nameInput = document.getElementById('new-user-name');
+    if(!nameInput || !nameInput.value.trim()) return window.showToast('Please enter a patient name.', 'error');
+    currentPatientName = nameInput.value.trim();
+    document.getElementById('booking-for-name').innerText = currentPatientName;
+    document.getElementById('internal-booking-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('internal-booking-modal').classList.remove('opacity-0'), 10);
+};
 
-// Modal Logic
-window.openInternalBooking = () => {
-    previousFocusElement = document.activeElement;
-    const modal = document.getElementById('internal-booking-modal');
-    if(modal) {
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.add('opacity-100');
-            modal.querySelector('div')?.classList.remove('scale-95');
-            document.getElementById('int-book-symptoms')?.focus();
-        }, 10);
+// --- TIMELINE RENDERER ---
+window.loadTimeline = (targetName) => {
+    currentPatientName = targetName;
+    document.getElementById('profile-selector-view').classList.add('hidden');
+    document.getElementById('clinical-feed-view').classList.remove('hidden');
+    
+    document.getElementById('profile-name').innerText = targetName;
+    document.getElementById('profile-avatar').innerText = targetName.charAt(0).toUpperCase();
+
+    // Filter and Sort in-memory
+    const patientHistory = globalAppointments
+        .filter(app => app.name === targetName)
+        .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+    // Calculate "Member Since"
+    if (patientHistory.length > 0) {
+        const oldest = patientHistory[patientHistory.length - 1];
+        document.getElementById('profile-member-since').innerText = `Patient Since: ${oldest.date}`;
+    } else {
+        document.getElementById('profile-member-since').innerText = `New Patient`;
     }
+
+    const feedContainer = document.getElementById('clinical-feed');
+    feedContainer.innerHTML = '';
+
+    patientHistory.forEach(app => {
+        const statusConfig = {
+            'pending': { color: 'amber', icon: 'schedule', label: 'Processing' },
+            'confirmed': { color: 'blue', icon: 'event_available', label: 'Upcoming' },
+            'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
+        }[app.status] || { color: 'slate', icon: 'info', label: app.status };
+
+        let medicalAdviceHTML = '';
+        if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
+            medicalAdviceHTML = `
+                <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                    <p class="text-xs font-bold text-navy-600 uppercase tracking-widest mb-2 flex items-center gap-1"><span class="material-icons-round text-[14px]">medical_services</span> Clinical Notes</p>
+                    <p class="text-sm text-slate-700 whitespace-pre-wrap">${app.medicalAdvice}</p>
+                </div>
+            `;
+        }
+
+        feedContainer.innerHTML += `
+            <div class="relative">
+                <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
+                <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}</span>
+                            <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
+                            <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
+                        </span>
+                    </div>
+                    ${medicalAdviceHTML}
+                </div>
+            </div>
+        `;
+    });
+};
+
+// --- NAVIGATION & BOOKING ---
+document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
+    document.getElementById('clinical-feed-view').classList.add('hidden');
+    document.getElementById('profile-selector-view').classList.remove('hidden');
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
+
+window.openInternalBooking = () => {
+    document.getElementById('booking-for-name').innerText = currentPatientName;
+    document.getElementById('internal-booking-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('internal-booking-modal').classList.remove('opacity-0'), 10);
 };
 
 window.closeInternalBooking = () => {
-    const modal = document.getElementById('internal-booking-modal');
-    if(modal) {
-        modal.classList.remove('opacity-100');
-        modal.querySelector('div')?.classList.add('scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            if(previousFocusElement) previousFocusElement.focus();
-        }, 300);
-    }
+    document.getElementById('internal-booking-modal').classList.add('opacity-0');
+    setTimeout(() => document.getElementById('internal-booking-modal').classList.add('hidden'), 300);
 };
 
-// Form & Time Logic Integration
-const applyInternalValidation = (dateInputId, hiddenInputId) => {
-    const dateInput = document.getElementById(dateInputId);
-    const hiddenInput = document.getElementById(hiddenInputId);
-    if (!dateInput || !hiddenInput) return;
+// --- TIME SLOT LOGIC ---
+const sessionSlots = {
+    morning: { start: 9, end: 12 },
+    afternoon: { start: 12, end: 17 },
+    evening: { start: 17, end: 21 }
+};
 
-    const ranges = [
-        { id: 'morning', slots: ["10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM"] },
-        { id: 'afternoon', slots: ["12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM"] },
-        { id: 'evening', slots: ["05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM", "08:30 PM"] }
-    ];
+const generateSlots = (startHour, endHour) => {
+    const slots = [];
+    for (let h = startHour; h < endHour; h++) {
+        for (let m of ["00", "15", "30", "45"]) {
+            const period = h >= 12 ? "PM" : "AM";
+            const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+            slots.push(`${displayH}:${m} ${period}`);
+        }
+    }
+    return slots;
+};
 
-    window.toggleAccordion = (id) => {
-        ['morning', 'afternoon', 'evening'].forEach(s => {
-            const content = document.getElementById(`content-${s}`);
-            const chevron = document.getElementById(`chevron-${s}`);
-            if (s === id) {
-                const isOpen = content.classList.contains('max-h-96');
-                content.classList.replace(isOpen ? 'max-h-96' : 'max-h-0', isOpen ? 'max-h-0' : 'max-h-96');
-                chevron.classList.toggle('rotate-180', !isOpen);
-            } else {
+window.toggleAccordion = (id) => {
+    ['morning', 'afternoon', 'evening'].forEach(s => {
+        const content = document.getElementById(`content-${s}`);
+        const chevron = document.getElementById(`chevron-${s}`);
+        if (!content) return;
+        if (s === id) {
+            const isOpen = content.classList.contains('max-h-96');
+            if (isOpen) {
                 content.classList.replace('max-h-96', 'max-h-0');
-                chevron.classList.remove('rotate-180');
+                chevron?.classList.remove('rotate-180');
+            } else {
+                content.classList.replace('max-h-0', 'max-h-96');
+                chevron?.classList.add('rotate-180');
             }
-        });
-    };
+        } else {
+            content.classList.replace('max-h-96', 'max-h-0');
+            chevron?.classList.remove('rotate-180');
+        }
+    });
+};
 
-    window.selectTimeSlot = (e, slot) => {
-        if(e) e.preventDefault();
-        hiddenInput.value = slot;
-        document.querySelectorAll('.chip-time-int').forEach(c => {
-            c.classList.remove('bg-navy-900', 'text-white', 'border-navy-900');
-            if(c.innerText.trim() === slot) c.classList.add('bg-navy-900', 'text-white', 'border-navy-900');
-        });
-    };
+window.selectSlot = (e, slot) => {
+    if (e) e.preventDefault();
+    const input = document.getElementById('int-book-time');
+    if (input) input.value = slot;
+    document.querySelectorAll('.chip-time-int').forEach(c => {
+        c.classList.remove('bg-navy-900', 'text-white', 'border-navy-900');
+        if (c.innerText.trim() === slot) c.classList.add('bg-navy-900', 'text-white', 'border-navy-900');
+    });
+};
 
-    const renderSlots = (dateStr) => {
-        ranges.forEach(range => {
-            const container = document.getElementById(`slots-${range.id}`);
-            if(!container) return;
-            let html = '';
-            range.slots.forEach(slot => {
-                html += `
-                    <button type="button" onclick="window.selectTimeSlot(event, '${slot}')" class="chip-time-int h-10 w-full border border-slate-200 rounded-lg text-[10px] font-bold hover:border-navy-900 transition-all">
+const renderSlots = async (dateStr) => {
+    try {
+        const calendarSnap = await getDoc(doc(db, "settings", "calendar"));
+        const blockedSlots = calendarSnap.exists() ? (calendarSnap.data().blockedSlots || []) : [];
+        
+        ['morning', 'afternoon', 'evening'].forEach(session => {
+            const container = document.getElementById(`slots-${session}`);
+            if (!container) return;
+            
+            const { start, end } = sessionSlots[session];
+            const slots = generateSlots(start, end);
+            
+            container.innerHTML = slots.map(slot => {
+                const isBlocked = blockedSlots.includes(`${dateStr}|${slot}`) || 
+                                 blockedSlots.includes(`${dateStr}|${session.charAt(0).toUpperCase() + session.slice(1)}`) ||
+                                 blockedSlots.includes(`${dateStr}|All`);
+                
+                return `
+                    <button type="button" 
+                        ${isBlocked ? 'disabled' : ''}
+                        onclick="window.selectSlot(event, '${slot}')" 
+                        class="chip-time-int h-10 w-full border border-slate-200 rounded-lg text-[10px] font-bold transition-all ${isBlocked ? 'bg-slate-50 text-slate-400 line-through cursor-not-allowed opacity-50' : 'hover:border-navy-900 hover:bg-slate-50'}">
                         ${slot}
                     </button>
                 `;
-            });
-            container.innerHTML = html;
+            }).join('');
         });
         window.toggleAccordion('morning');
-    };
-
-    if (typeof flatpickr !== 'undefined') {
-        flatpickr(dateInput, {
-            minDate: "today",
-            disable: [(date) => (date.getDay() === 0)],
-            dateFormat: "d/m/Y",
-            onChange: (selectedDates, dateStr) => {
-                document.getElementById('int-time-slot-column')?.classList.remove('hidden');
-                setTimeout(() => document.getElementById('int-time-slot-column')?.classList.add('opacity-100'), 10);
-                document.getElementById('internal-booking-modal-content')?.classList.replace('max-w-md', 'max-w-4xl');
-                renderSlots(dateStr);
-            }
-        });
+    } catch (e) {
+        console.error("Slot Render Error:", e);
     }
 };
-
-applyInternalValidation('int-book-date', 'int-book-time');
 
 document.getElementById('internal-booking-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -291,13 +266,10 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
     const time = document.getElementById('int-book-time').value;
     const symptoms = document.getElementById('int-book-symptoms').value;
 
-    if(!date || !time || !symptoms) {
-        window.showToast("Please complete all booking fields.", "error");
-        return;
-    }
+    if (!time) return window.showToast("Please select a time slot.", "error");
 
     submitBtn.disabled = true;
-    submitBtn.innerText = "Processing...";
+    submitBtn.innerHTML = "Processing...";
 
     try {
         await addDoc(collection(db, "appointments"), {
@@ -307,20 +279,29 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
             time: time,
             symptoms: symptoms,
             timestamp: serverTimestamp(),
-            status: 'pending'
+            status: 'pending',
+            medicalAdvice: ''
         });
-        window.showToast("Appointment requested!");
+        window.showToast("Appointment requested successfully!");
         setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
         console.error(error);
         window.showToast("Submission failed.", "error");
         submitBtn.disabled = false;
-        submitBtn.innerText = "Submit Request";
+        submitBtn.innerHTML = "Submit Request";
     }
 });
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        window.closeInternalBooking();
-    }
-});
+// --- INITIALIZATION ---
+if (typeof flatpickr !== 'undefined') {
+    flatpickr("#int-book-date", {
+        minDate: "today",
+        disable: [(date) => date.getDay() === 0],
+        dateFormat: "d/m/Y",
+        onChange: (selectedDates, dateStr) => {
+            document.getElementById('int-time-slot-column').classList.remove('hidden', 'opacity-0');
+            document.getElementById('internal-booking-modal-content').classList.replace('max-w-md', 'max-w-4xl');
+            renderSlots(dateStr);
+        }
+    });
+}

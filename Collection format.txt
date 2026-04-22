@@ -1,0 +1,32 @@
+In the Firebase DB, we have to create a new Collection named "Patients"
+and inside there will a another DocID with the Mobile number used as the Tree stem
+where all the users who uses the same mobile number will becoem branches under that tree. 
+under that there will an Doc ID with the data of UserID (which is nothing but a combination of user mobile number and user name/branch named) 
+and for instense when as user number is used for the other user name. will be added as family member(branches of the same tree stem) so that will be under the same tree ID number (mobile number) like that.
+
+example:
+Patients
+    |-- 9848012345 (Tree Stem)
+        |-- 9848012345_John Doe (User ID)
+        |-- 9848012345_Jane Doe (User ID)
+        |-- 9848012345_K Nikhil Joshua (User ID)
+    |-- 9848012346 (Tree Stem)
+        |-- 9848012346_John Doe (User ID)
+        |-- 9848012346_Jane Doe (User ID)
+        |-- 9848012346_K Nikhil Joshua (User ID)
+
+and after that each Branch will have there case ID ( Appointment ID ) which is nothing but a combination of time and date of the appointment.
+but what about the other mobile number user who might also book at the same time. so we need something else for the case ID.
+and inside each case ID there will the main details such as 
+
+
+"date": "25/04/2026",
+"time": "10:30 AM",
+"symptoms": "Fever and cold",
+"status": "pending", // Can be updated to 'confirmed' or 'completed'
+"medicalAdvice": "", // Dr. Joshua types his notes here during/after the visit
+"timestamp": "ServerTimestamp"
+
+
+and for the basic details of the userID (which is nothing but a combination of user mobile number and user name/branch name) will be saved along side of the case ID cause there the common details such as DOB , name, Age, etc as we thought before.
+    

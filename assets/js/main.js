@@ -3,6 +3,10 @@ import { RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged } from "ht
 import { auth, db } from './firebase-init.js';
 
 
+// Normalization Engine
+window.sanitizePhone = (raw) => raw.replace('+91', '').replace(/[\s\-()]/g, '');
+
+
 // Custom Toast Notification System
 window.showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
@@ -476,21 +480,16 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
 
             try {
-                const phoneVal = phoneInput.value.trim();
-                const formattedPhone = "+91" + phoneVal;
-
+                // L8 ALIGNMENT: Strictly push the flat record structure
                 await addDoc(collection(db, "appointments"), {
-                    name: nameInput.value,
-                    phone: formattedPhone,
+                    name: nameInput.value.trim(),
+                    phone: window.sanitizePhone(phoneInput.value),
                     date: dateInput.value,
-                    time: timeInput.value,
-                    symptoms: symptomsInput.value,
-                    consent: consentInput.checked,
-                    timestamp: serverTimestamp(),
-                    status: 'pending'
-                }).catch(err => {
-                    console.error("Failed to add appointment:", err);
-                    throw err;
+                    time: "Requested via Homepage", // Public bookings are triage-first
+                    symptoms: symptomsInput.value.trim(),
+                    status: 'pending',
+                    medicalAdvice: '', // Critical: Initialize for portal visibility
+                    timestamp: serverTimestamp()
                 });
                 
                 // Update cooldown timer on success
