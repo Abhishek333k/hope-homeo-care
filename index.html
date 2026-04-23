@@ -974,12 +974,18 @@
     <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
 
     <!-- Campaign Popup Modal -->
-    <div id="campaign-popup-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden relative transform scale-95 transition-transform duration-300">
-            <button onclick="window.showNextCampaign()" class="absolute top-4 right-4 w-10 h-10 bg-black/40 hover:bg-black/70 backdrop-blur-md text-white rounded-full flex items-center justify-center transition-all z-10 shadow-lg">
-                <span class="material-icons-round">close</span>
+    <div id="campaign-popup-overlay"
+        role="dialog" aria-modal="true" aria-hidden="true"
+        class="hidden fixed inset-0 z-[200] items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="relative w-auto mx-4 transform scale-95 transition-transform duration-300 flex justify-center items-center">
+            <button onclick="window.showNextCampaign()"
+                class="absolute -top-4 -right-4 bg-slate-900 text-white rounded-full p-2 hover:bg-slate-700 transition-colors z-10 shadow-xl border-2 border-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
-            <img id="campaign-popup-image" src="" alt="Clinic Announcement" class="w-full h-auto object-contain min-h-[300px] bg-slate-100">
+            <img id="campaign-popup-image" src="" alt="Clinic Announcement"
+                class="w-auto h-auto max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl bg-white">
         </div>
     </div>
 
