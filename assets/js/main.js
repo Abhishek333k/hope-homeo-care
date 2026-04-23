@@ -819,47 +819,97 @@ window.closeReviewsModal = () => {
     }
 };
 
-async function loadActiveCampaign() {
-    if (sessionStorage.getItem('campaignSeen')) return;
-    try {
-        const q = query(collection(db, "campaigns"), where("status", "==", "active"));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) return;
+// ==========================================
+// 🚀 SEQUENTIAL CAMPAIGN POPUP ENGINE
+// ==========================================
+let campaignQueue = [];
 
+async function initCampaignEngine() {
+    try {
+        // 1. Fetch all hypothetically active campaigns
+        const q = query(collection(db, "campaigns"), where("status", "==", "active"));
+        const snap = await getDocs(q);
+        
         const now = new Date();
-        let activeCampaign = null;
-        snapshot.forEach(doc => {
+        let validCampaigns = [];
+
+        snap.forEach(doc => {
             const data = doc.data();
-            if (data.startTime && data.endTime) {
-                const start = data.startTime.toDate();
-                const end = data.endTime.toDate();
-                if (now >= start && now <= end) activeCampaign = data;
+            const start = data.startTime.toDate();
+            const end = data.endTime.toDate();
+
+            // 2. Strict Time Validation: Is this campaign active RIGHT NOW?
+            if (now >= start && now <= end) {
+                validCampaigns.push({ id: doc.id, ...data });
             }
         });
 
-        if (activeCampaign && activeCampaign.imageUrl) {
-            const modal = document.getElementById('campaign-modal');
-            const img = document.getElementById('campaign-image');
-            const box = document.getElementById('campaign-box');
-            const closeBtn = document.getElementById('close-campaign-btn');
-            img.src = activeCampaign.imageUrl;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-            }, 50);
+        // Sort so newest campaigns pop up first
+        validCampaigns.sort((a, b) => b.createdAt - a.createdAt);
+        
+        // Load into the global queue and trigger the engine
+        campaignQueue = validCampaigns;
+        
+        // Wait 1.5 seconds after page load before popping the first ad
+        setTimeout(() => { window.showNextCampaign(true); }, 1500);
 
-            const closeModal = () => {
-                modal.classList.add('opacity-0');
-                box.classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-                sessionStorage.setItem('campaignSeen', 'true');
-            };
-            closeBtn?.addEventListener('click', closeModal);
-            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-        }
-    } catch (error) { console.error("Failed to load campaign:", error); }
+    } catch(e) {
+        console.error("Campaign Engine Error:", e);
+    }
 }
+
+window.showNextCampaign = (isFirstLoad = false) => {
+    const modal = document.getElementById('campaign-popup-overlay');
+    if (!modal) return;
+
+    // If it's not the first load, it means the user clicked 'Close'. 
+    // We animate the current one away before showing the next one.
+    if (!isFirstLoad) {
+        modal.classList.add('opacity-0');
+        modal.children[0].classList.add('scale-95');
+    }
+
+    setTimeout(() => {
+        // 1. Check Session Memory (What has the user already closed today?)
+        let seen = JSON.parse(sessionStorage.getItem('seenCampaigns') || '[]');
+        
+        // 2. Find the next unseen campaign in the queue
+        let nextCampaign = null;
+        while (campaignQueue.length > 0) {
+            const candidate = campaignQueue.shift(); // Pull top card from deck
+            if (!seen.includes(candidate.id)) {
+                nextCampaign = candidate;
+                break;
+            }
+        }
+
+        if (nextCampaign) {
+            // Load Graphic
+            document.getElementById('campaign-popup-image').src = nextCampaign.imageUrl;
+            
+            // Mark as Seen in Memory
+            seen.push(nextCampaign.id);
+            sessionStorage.setItem('seenCampaigns', JSON.stringify(seen));
+
+            // Animate In
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modal.children[0].classList.remove('scale-95');
+            });
+        } else {
+            // Queue is completely empty. Destroy the modal.
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }, isFirstLoad ? 0 : 300); // 300ms delay allows the "Scale Out" animation to finish before swapping images
+};
+
+// Boot the Engine
+document.addEventListener('DOMContentLoaded', () => {
+    initCampaignEngine();
+});
 
 let globalGalleryData = [];
 let currentGalleryIndex = 0;
@@ -937,5 +987,5 @@ document.addEventListener('keydown', (e) => {
 
 fetchBlogPosts();
 loadGoogleReviews();
-loadActiveCampaign();
+// loadActiveCampaign(); (Replaced by DOMContentLoaded init)
 loadPublicGallery();

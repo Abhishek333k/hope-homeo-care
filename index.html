@@ -973,6 +973,16 @@
 
     <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
 
+    <!-- Campaign Popup Modal -->
+    <div id="campaign-popup-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden relative transform scale-95 transition-transform duration-300">
+            <button onclick="window.showNextCampaign()" class="absolute top-4 right-4 w-10 h-10 bg-black/40 hover:bg-black/70 backdrop-blur-md text-white rounded-full flex items-center justify-center transition-all z-10 shadow-lg">
+                <span class="material-icons-round">close</span>
+            </button>
+            <img id="campaign-popup-image" src="" alt="Clinic Announcement" class="w-full h-auto object-contain min-h-[300px] bg-slate-100">
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
     <script type="module" src="assets/js/main.js"></script>
 </body>
