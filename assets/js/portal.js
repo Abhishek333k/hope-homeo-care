@@ -8,13 +8,34 @@ let globalAppointments = [];
 
 window.generateGoogleCalendarLink = (dateStr, timeStr, doctorName = "Dr. K. Nikhil Joshua") => {
     try {
-        const [day, month, year] = dateStr.split('/');
-        const parsedDateStr = `${year}-${month}-${day}`;
-        const eventDate = new Date(`${parsedDateStr} ${timeStr}`);
+        // Parse "DD/MM/YYYY" or "YYYY-MM-DD"
+        let year, month, day;
+        if (dateStr.includes('/')) {
+            [day, month, year] = dateStr.split('/');
+        } else if (dateStr.includes('-')) {
+            [year, month, day] = dateStr.split('-');
+        } else {
+            throw new Error("Unknown date format");
+        }
         
-        const start = eventDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
-        const endDate = new Date(eventDate.getTime() + 30 * 60000);
-        const end = endDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
+        const parsedDateStr = `${year}-${month}-${day}`;
+        let start, end;
+
+        // Check if we have a real time or a placeholder from the homepage
+        if (!timeStr || timeStr === 'Requested via Homepage' || timeStr === 'N/A') {
+            // ALL-DAY EVENT
+            const eventDate = new Date(`${parsedDateStr}T00:00:00`);
+            start = eventDate.toISOString().split('T')[0].replace(/-/g, "");
+            
+            const endDate = new Date(eventDate.getTime() + 24 * 60 * 60000);
+            end = endDate.toISOString().split('T')[0].replace(/-/g, "");
+        } else {
+            // TIMED EVENT
+            const eventDate = new Date(`${parsedDateStr} ${timeStr}`);
+            start = eventDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
+            const endDate = new Date(eventDate.getTime() + 30 * 60000);
+            end = endDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
+        }
 
         const title = encodeURIComponent(`Consultation with ${doctorName}`);
         const details = encodeURIComponent(`Medical consultation at Hope Homeo Care.\n\nPlease bring any previous medical records.`);
@@ -159,7 +180,7 @@ window.loadTimeline = (targetName) => {
         }
 
         let calendarBtnHTML = '';
-        if (app.status === 'confirmed' && app.time && app.time !== 'Requested via Homepage') {
+        if (app.status === 'confirmed') {
             calendarBtnHTML = `
                 <a href="${window.generateGoogleCalendarLink(app.date, app.time)}" target="_blank" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                     <span class="material-icons-round text-[18px]">event</span> Add to Google Calendar
