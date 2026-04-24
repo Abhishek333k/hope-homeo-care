@@ -6,6 +6,27 @@ let currentCleanPhone = '';
 let currentPatientName = '';
 let globalAppointments = [];
 
+window.generateGoogleCalendarLink = (dateStr, timeStr, doctorName = "Dr. K. Nikhil Joshua") => {
+    try {
+        const [day, month, year] = dateStr.split('/');
+        const parsedDateStr = `${year}-${month}-${day}`;
+        const eventDate = new Date(`${parsedDateStr} ${timeStr}`);
+        
+        const start = eventDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
+        const endDate = new Date(eventDate.getTime() + 30 * 60000);
+        const end = endDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
+
+        const title = encodeURIComponent(`Consultation with ${doctorName}`);
+        const details = encodeURIComponent(`Medical consultation at Hope Homeo Care.\n\nPlease bring any previous medical records.`);
+        const location = encodeURIComponent(`Hope Homeo Care, Mangalagiri, AP`);
+
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+    } catch (e) {
+        console.warn("Date parsing failed for Calendar link", e);
+        return "#";
+    }
+};
+
 window.showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -137,6 +158,15 @@ window.loadTimeline = (targetName) => {
             `;
         }
 
+        let calendarBtnHTML = '';
+        if (app.status === 'confirmed' && app.time && app.time !== 'Requested via Homepage') {
+            calendarBtnHTML = `
+                <a href="${window.generateGoogleCalendarLink(app.date, app.time)}" target="_blank" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <span class="material-icons-round text-[18px]">event</span> Add to Google Calendar
+                </a>
+            `;
+        }
+
         feedContainer.innerHTML += `
             <div class="relative">
                 <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
@@ -151,6 +181,7 @@ window.loadTimeline = (targetName) => {
                         </span>
                     </div>
                     ${medicalAdviceHTML}
+                    ${calendarBtnHTML}
                 </div>
             </div>
         `;
