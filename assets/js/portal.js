@@ -8,15 +8,9 @@ let globalAppointments = [];
 
 window.generateGoogleCalendarLink = (dateStr, timeStr, doctorName = "Dr. K. Nikhil Joshua") => {
     try {
-        // Parse "DD/MM/YYYY" or "YYYY-MM-DD"
-        let year, month, day;
-        if (dateStr.includes('/')) {
-            [day, month, year] = dateStr.split('/');
-        } else if (dateStr.includes('-')) {
-            [year, month, day] = dateStr.split('-');
-        } else {
-            throw new Error("Unknown date format");
-        }
+        // Strictly parse "DD/MM/YYYY" format across the project
+        const [day, month, year] = dateStr.split('/');
+        if (!day || !month || !year) throw new Error("Invalid date format, expected DD/MM/YYYY");
         
         const parsedDateStr = `${year}-${month}-${day}`;
         let start, end;
@@ -194,7 +188,7 @@ window.loadTimeline = (targetName) => {
                 <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}</span>
+                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}${app.time && app.time !== 'Requested via Homepage' && app.time !== 'N/A' ? ' &bull; ' + app.time : ''}</span>
                             <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
                         </div>
                         <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
