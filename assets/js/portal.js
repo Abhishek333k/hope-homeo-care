@@ -64,61 +64,50 @@ onAuthStateChanged(auth, async (user) => {
         currentCleanPhone = user.phoneNumber.replace('+91', '');
         document.getElementById('logout-btn').classList.remove('hidden');
         document.getElementById('switch-profile-btn').classList.remove('hidden');
-        await fetchFamilyProfiles(currentCleanPhone);
+        await fetchFamilyProfiles();
     } else {
         window.location.href = 'index.html';
     }
 });
 
 // --- PROFILE GENERATOR ---
-const fetchFamilyProfiles = async (phone) => {
+const fetchFamilyProfiles = async () => {
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", phone));
-        const snapshot = await getDocs(q);
-        globalAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const profilesRef = collection(db, "patients");
         
-        // Mathematically extract unique names
-        const uniqueNames = [...new Set(globalAppointments.map(app => app.name).filter(Boolean))];
-        
-        const selectorView = document.getElementById('profile-selector-view');
-        const feedView = document.getElementById('clinical-feed-view');
+        // SEQUENTIAL QUERY STRATEGY: Bypasses the Firebase 'in' array static analyzer crash
+        let q = query(profilesRef, where("phone", "==", currentCleanPhone));
+        let snapshot = await getDocs(q);
+
+        // Fallback for +91 numbers if the raw 10-digit fails
+        if (snapshot.empty) {
+            q = query(profilesRef, where("phone", "==", `+91${currentCleanPhone}`));
+            snapshot = await getDocs(q);
+        }
+
         const container = document.getElementById('family-profiles-container');
-        
-        if (uniqueNames.length === 0) {
-            // NEW USER: First Time Booking UI
-            selectorView.classList.remove('hidden');
-            feedView.classList.add('hidden');
-            container.innerHTML = `
-                <div class="col-span-full text-center py-10 w-full">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy-100 text-navy-600 mb-4">
-                        <span class="material-icons-round text-3xl">waving_hand</span>
+        if (!container) return;
+
+        let html = '';
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const isActive = data.name === currentPatientName ? 'ring-2 ring-navy-600 bg-navy-50' : 'bg-slate-50 border border-slate-200 hover:bg-slate-100 cursor-pointer';
+            
+            html += `
+                <div onclick="window.switchProfile('${data.name}')" class="${isActive} rounded-xl p-3 flex items-center gap-3 transition-all">
+                    <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg shrink-0">
+                        ${data.name.charAt(0).toUpperCase()}
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome to Hope Homeo Care</h3>
-                    <p class="text-slate-500 mb-8">It looks like you don't have any appointments yet.</p>
-                    <div class="max-w-xs mx-auto text-left">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
-                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-navy-500 outline-none" placeholder="e.g., John Doe">
-                        <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all shadow-lg">Start Booking</button>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800">${data.name}</h4>
+                        <p class="text-xs text-slate-500">Patient</p>
                     </div>
                 </div>
             `;
-        } else if (uniqueNames.length === 1) {
-            // Auto-load single profile
-            window.loadTimeline(uniqueNames[0]);
-        } else {
-            // Netflix-style Multi-Profile UI
-            selectorView.classList.remove('hidden');
-            feedView.classList.add('hidden');
-            container.innerHTML = uniqueNames.map(name => `
-                <button onclick="window.loadTimeline('${name}')" class="flex flex-col items-center group transition-transform hover:scale-105">
-                    <div class="w-24 h-24 rounded-full bg-navy-50 border-4 border-white shadow-lg flex items-center justify-center text-navy-900 text-3xl font-black mb-3 group-hover:bg-navy-100 transition-colors">${name.charAt(0).toUpperCase()}</div>
-                    <span class="text-lg font-bold text-slate-700">${name}</span>
-                </button>
-            `).join('');
-        }
-    } catch (e) {
-        console.error("Profile Fetch Error:", e);
-        window.showToast("Failed to fetch records. Check connection.", "error");
+        });
+        container.innerHTML = html;
+    } catch (error) {
+        console.error("Profile Fetch Error:", error);
     }
 };
 
@@ -210,6 +199,11 @@ document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
+
+window.switchProfile = (name) => {
+    window.loadTimeline(name);
+    fetchFamilyProfiles(); // Refresh UI to update active ring
+};
 
 window.openInternalBooking = () => {
     document.getElementById('booking-for-name').innerText = currentPatientName;
