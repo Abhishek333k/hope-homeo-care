@@ -960,3 +960,18 @@ fetchBlogPosts();
 loadGoogleReviews();
 loadActiveCampaign();
 loadPublicGallery();
+
+// ==========================================
+// 🌊 GLOBAL BACKGROUND WATERMARK INJECTION
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if it already exists so we don't accidentally mount it twice
+    if (!document.querySelector('.bg-crest')) {
+        const crest = document.createElement('div');
+        crest.className = 'bg-crest';
+        
+        // Prepend places it at the very start of the body tag. 
+        // Thanks to your fixed position and z-index: -2, it will stay perfectly in the background.
+        document.body.prepend(crest);
+    }
+});
