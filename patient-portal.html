@@ -53,10 +53,16 @@
 
     <main class="flex-1 flex flex-col p-6 overflow-y-auto w-full max-w-4xl mx-auto">
         
-        <div id="profile-selector-view" class="hidden w-full max-w-2xl mx-auto mt-12 text-center">
-            <h2 class="text-3xl lg:text-4xl font-bold text-navy-900 mb-2">Who is accessing?</h2>
-            <p class="text-slate-500 mb-10 text-lg">Multiple profiles are linked to this mobile number.</p>
-            <div id="family-profiles-container" class="flex flex-wrap justify-center gap-6">
+        <!-- Profile Selection Drawer (Rule Compliant) -->
+        <div id="profile-selector-view" class="hidden w-full max-w-md mx-auto mt-12">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div class="p-6 bg-navy-900 text-white text-center">
+                    <h2 class="text-2xl font-bold">Who is accessing?</h2>
+                    <p class="text-navy-100/70 text-sm mt-1">Select a profile to view records.</p>
+                </div>
+                <div id="family-profile-list" class="max-h-[400px] overflow-y-auto">
+                    <!-- Profiles injected here by portal.js -->
+                </div>
             </div>
         </div>
 
