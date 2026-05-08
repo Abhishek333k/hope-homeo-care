@@ -64,7 +64,38 @@ onAuthStateChanged(auth, async (user) => {
         currentCleanPhone = user.phoneNumber.replace('+91', '');
         document.getElementById('logout-btn').classList.remove('hidden');
         document.getElementById('switch-profile-btn').classList.remove('hidden');
+        
+        const selectorView = document.getElementById('profile-selector-view');
+        const feedView = document.getElementById('clinical-feed-view');
+        
+        selectorView.classList.remove('hidden');
+        feedView.classList.add('hidden');
+        
         await fetchFamilyProfiles();
+        
+        // Auto-load if only one profile exists
+        if (globalAppointments.length === 1) {
+            window.switchProfile(globalAppointments[0].id);
+        } else if (globalAppointments.length === 0) {
+            // Show welcome/new user UI in the profile list
+            const profileList = document.getElementById('family-profile-list');
+            if (profileList) {
+                profileList.innerHTML = `
+                    <div class="p-8 text-center">
+                        <div class="w-16 h-16 bg-navy-50 rounded-full flex items-center justify-center mx-auto mb-4 text-navy-900">
+                            <span class="material-icons-round text-3xl">waving_hand</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Welcome!</h3>
+                        <p class="text-sm text-slate-500 mb-6">Create your first patient profile to begin.</p>
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Patient Full Name</label>
+                            <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 outline-none focus:border-navy-900" placeholder="e.g., John Doe">
+                            <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 text-white font-bold py-3 rounded-xl shadow-lg">Start Booking</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
     } else {
         window.location.href = 'index.html';
     }
@@ -72,43 +103,73 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- PROFILE GENERATOR ---
 const fetchFamilyProfiles = async () => {
-    try {
-        const profilesRef = collection(db, "patients");
-        
-        // SEQUENTIAL QUERY STRATEGY: Bypasses the Firebase 'in' array static analyzer crash
-        let q = query(profilesRef, where("phone", "==", currentCleanPhone));
-        let snapshot = await getDocs(q);
+    const profileList = document.getElementById('family-profile-list');
+    if (!profileList) return;
 
-        // Fallback for +91 numbers if the raw 10-digit fails
+    try {
+        const fullPhone = "+91" + currentCleanPhone;
+        
+        // FIRST TRY: Query with raw 10-digit phone
+        let q = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
+        let snapshot = await getDocs(q);
+        
+        // SECOND TRY: If empty, query with +91 prefix
         if (snapshot.empty) {
-            q = query(profilesRef, where("phone", "==", `+91${currentCleanPhone}`));
+            q = query(collection(db, "patients"), where("phone", "==", fullPhone));
             snapshot = await getDocs(q);
         }
 
-        const container = document.getElementById('family-profiles-container');
-        if (!container) return;
-
+        globalAppointments = []; // Reset
         let html = '';
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const isActive = data.name === currentPatientName ? 'ring-2 ring-navy-600 bg-navy-50' : 'bg-slate-50 border border-slate-200 hover:bg-slate-100 cursor-pointer';
-            
-            html += `
-                <div onclick="window.switchProfile('${data.name}')" class="${isActive} rounded-xl p-3 flex items-center gap-3 transition-all">
-                    <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg shrink-0">
-                        ${data.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-bold text-slate-800">${data.name}</h4>
-                        <p class="text-xs text-slate-500">Patient</p>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
+
+        if (snapshot.empty) {
+            html = `<div class="p-3 text-sm text-slate-500 text-center">No profiles found for this number.</div>`;
+        } else {
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const name = data.name || "Unknown Patient";
+                const relation = data.relation || "Self";
+                const id = doc.id;
+                
+                // Push to global array for the feed engine to use later
+                globalAppointments.push({ id, ...data });
+
+                html += `
+                    <button type="button" onclick="window.switchProfile('${id}')" class="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between border-b border-slate-100 last:border-0 transition-colors group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-navy-50 text-navy-900 flex items-center justify-center font-bold text-sm group-hover:bg-navy-900 group-hover:text-white transition-colors">
+                                ${name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">${name}</p>
+                                <p class="text-xs text-slate-500">${relation}</p>
+                            </div>
+                        </div>
+                        <span class="material-icons-round text-slate-400 text-sm group-hover:text-navy-900">chevron_right</span>
+                    </button>
+                `;
+            });
+        }
+        profileList.innerHTML = html;
+
     } catch (error) {
         console.error("Profile Fetch Error:", error);
+        profileList.innerHTML = `<div class="p-3 text-sm text-rose-500 text-center flex items-center justify-center gap-2"><span class="material-icons-round text-[16px]">error_outline</span> Failed to load profiles.</div>`;
     }
+};
+
+window.switchProfile = async (profileId) => {
+    const profile = globalAppointments.find(p => p.id === profileId);
+    if (!profile) return;
+    
+    currentPatientName = profile.name;
+    document.getElementById('profile-selector-view').classList.add('hidden');
+    document.getElementById('clinical-feed-view').classList.remove('hidden');
+    
+    document.getElementById('profile-name').innerText = profile.name;
+    document.getElementById('profile-avatar').innerText = profile.name.charAt(0).toUpperCase();
+    
+    await window.loadTimeline(profile.name);
 };
 
 window.startFirstBooking = () => {
@@ -121,75 +182,88 @@ window.startFirstBooking = () => {
 };
 
 // --- TIMELINE RENDERER ---
-window.loadTimeline = (targetName) => {
+window.loadTimeline = async (targetName) => {
     currentPatientName = targetName;
-    document.getElementById('profile-selector-view').classList.add('hidden');
-    document.getElementById('clinical-feed-view').classList.remove('hidden');
-    
-    document.getElementById('profile-name').innerText = targetName;
-    document.getElementById('profile-avatar').innerText = targetName.charAt(0).toUpperCase();
-
-    // Filter and Sort in-memory
-    const patientHistory = globalAppointments
-        .filter(app => app.name === targetName)
-        .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-    // Calculate "Member Since"
-    if (patientHistory.length > 0) {
-        const oldest = patientHistory[patientHistory.length - 1];
-        document.getElementById('profile-member-since').innerText = `Patient Since: ${oldest.date}`;
-    } else {
-        document.getElementById('profile-member-since').innerText = `New Patient`;
-    }
-
     const feedContainer = document.getElementById('clinical-feed');
-    feedContainer.innerHTML = '';
+    feedContainer.innerHTML = '<div class="p-10 text-center animate-pulse text-slate-400">Loading your medical history...</div>';
 
-    patientHistory.forEach(app => {
-        const statusConfig = {
-            'pending': { color: 'amber', icon: 'schedule', label: 'Processing' },
-            'confirmed': { color: 'blue', icon: 'event_available', label: 'Upcoming' },
-            'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
-        }[app.status] || { color: 'slate', icon: 'info', label: app.status };
+    try {
+        // Query appointments for this patient name AND phone
+        // This keeps it rule-compliant (query by phone) and specific (filter by name)
+        const q = query(
+            collection(db, "appointments"), 
+            where("phone", "==", currentCleanPhone), 
+            where("name", "==", targetName)
+        );
+        
+        const snapshot = await getDocs(q);
+        const patientHistory = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-        let medicalAdviceHTML = '';
-        if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
-            medicalAdviceHTML = `
-                <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
-                    <p class="text-xs font-bold text-navy-600 uppercase tracking-widest mb-2 flex items-center gap-1"><span class="material-icons-round text-[14px]">medical_services</span> Clinical Notes</p>
-                    <p class="text-sm text-slate-700 whitespace-pre-wrap">${app.medicalAdvice}</p>
-                </div>
-            `;
+        // Calculate "Member Since"
+        if (patientHistory.length > 0) {
+            const oldest = patientHistory[patientHistory.length - 1];
+            document.getElementById('profile-member-since').innerText = `Patient Since: ${oldest.date}`;
+        } else {
+            document.getElementById('profile-member-since').innerText = `New Patient`;
         }
 
-        let calendarBtnHTML = '';
-        if (app.status === 'confirmed') {
-            calendarBtnHTML = `
-                <a href="${window.generateGoogleCalendarLink(app.date, app.time)}" target="_blank" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                    <span class="material-icons-round text-[18px]">event</span> Add to Google Calendar
-                </a>
-            `;
+        if (patientHistory.length === 0) {
+            feedContainer.innerHTML = '<div class="p-10 text-center text-slate-400">No medical records found for this profile.</div>';
+            return;
         }
 
-        feedContainer.innerHTML += `
-            <div class="relative">
-                <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
-                <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}${app.time && app.time !== 'Requested via Homepage' && app.time !== 'N/A' ? ' &bull; ' + app.time : ''}</span>
-                            <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
-                            <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
-                        </span>
+        feedContainer.innerHTML = '';
+        patientHistory.forEach(app => {
+            const statusConfig = {
+                'pending': { color: 'amber', icon: 'schedule', label: 'Processing' },
+                'confirmed': { color: 'blue', icon: 'event_available', label: 'Upcoming' },
+                'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
+            }[app.status] || { color: 'slate', icon: 'info', label: app.status };
+
+            let medicalAdviceHTML = '';
+            if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
+                medicalAdviceHTML = `
+                    <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                        <p class="text-xs font-bold text-navy-600 uppercase tracking-widest mb-2 flex items-center gap-1"><span class="material-icons-round text-[14px]">medical_services</span> Clinical Notes</p>
+                        <p class="text-sm text-slate-700 whitespace-pre-wrap">${app.medicalAdvice}</p>
                     </div>
-                    ${medicalAdviceHTML}
-                    ${calendarBtnHTML}
+                `;
+            }
+
+            let calendarBtnHTML = '';
+            if (app.status === 'confirmed') {
+                calendarBtnHTML = `
+                    <a href="${window.generateGoogleCalendarLink(app.date, app.time)}" target="_blank" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                        <span class="material-icons-round text-[18px]">event</span> Add to Google Calendar
+                    </a>
+                `;
+            }
+
+            feedContainer.innerHTML += `
+                <div class="relative">
+                    <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
+                    <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}${app.time && app.time !== 'Requested via Homepage' && app.time !== 'N/A' ? ' &bull; ' + app.time : ''}</span>
+                                <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
+                                <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
+                            </span>
+                        </div>
+                        ${medicalAdviceHTML}
+                        ${calendarBtnHTML}
+                    </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    } catch (e) {
+        console.error("Timeline Render Error:", e);
+        feedContainer.innerHTML = '<div class="p-10 text-center text-rose-500">Failed to load medical history.</div>';
+    }
 };
 
 // --- NAVIGATION & BOOKING ---
@@ -199,11 +273,6 @@ document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', () => signOut(auth));
-
-window.switchProfile = (name) => {
-    window.loadTimeline(name);
-    fetchFamilyProfiles(); // Refresh UI to update active ring
-};
 
 window.openInternalBooking = () => {
     document.getElementById('booking-for-name').innerText = currentPatientName;
