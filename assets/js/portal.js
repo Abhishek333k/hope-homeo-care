@@ -61,61 +61,93 @@ window.showToast = (message, type = 'success') => {
 // --- STATE MANAGEMENT ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // Rule Compliance: Always use the 10-digit clean phone
         currentCleanPhone = user.phoneNumber.replace('+91', '');
         document.getElementById('logout-btn').classList.remove('hidden');
         document.getElementById('switch-profile-btn').classList.remove('hidden');
-        await fetchFamilyProfiles(currentCleanPhone);
+        await fetchFamilyProfiles();
     } else {
         window.location.href = 'index.html';
     }
 });
 
 // --- PROFILE GENERATOR ---
-const fetchFamilyProfiles = async (phone) => {
+const fetchFamilyProfiles = async () => {
+    const profileList = document.getElementById('family-profile-list');
+    if (!profileList) return;
+
     try {
-        const q = query(collection(db, "appointments"), where("phone", "==", phone));
+        // Source of Truth: The same collection used by the Admin Panel
+        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
         const snapshot = await getDocs(q);
+        
+        // Cache all records for in-memory filtering (Prevents permission errors on secondary queries)
         globalAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Mathematically extract unique names
+        // Extract unique names linked to this 10-digit phone
         const uniqueNames = [...new Set(globalAppointments.map(app => app.name).filter(Boolean))];
-        
+
         const selectorView = document.getElementById('profile-selector-view');
         const feedView = document.getElementById('clinical-feed-view');
-        const container = document.getElementById('family-profiles-container');
-        
+
         if (uniqueNames.length === 0) {
+            // New User Flow
             selectorView.classList.remove('hidden');
             feedView.classList.add('hidden');
-            container.innerHTML = `
-                <div class="col-span-full text-center py-10 w-full">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy-100 text-navy-600 mb-4">
+            profileList.innerHTML = `
+                <div class="p-8 text-center">
+                    <div class="w-16 h-16 bg-navy-50 rounded-full flex items-center justify-center mx-auto mb-4 text-navy-900">
                         <span class="material-icons-round text-3xl">waving_hand</span>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome to Hope Homeo Care</h3>
-                    <p class="text-slate-500 mb-8">It looks like you don't have any appointments yet.</p>
-                    <div class="max-w-xs mx-auto text-left">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
-                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-navy-500 outline-none" placeholder="e.g., John Doe">
-                        <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all shadow-lg">Start Booking</button>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Welcome!</h3>
+                    <p class="text-sm text-slate-500 mb-6">Create your first patient profile to begin.</p>
+                    <div class="text-left">
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Patient Full Name</label>
+                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 outline-none focus:border-navy-900" placeholder="e.g., John Doe">
+                        <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 text-white font-bold py-3 rounded-xl shadow-lg">Start Booking</button>
                     </div>
                 </div>
             `;
+        } else if (uniqueNames.length === 1 && !currentPatientName) {
+            // Auto-load if only one exists and we haven't selected one yet
+            window.switchProfile(uniqueNames[0]);
         } else {
+            // Multi-Profile Selection Drawer
             selectorView.classList.remove('hidden');
             feedView.classList.add('hidden');
-            container.innerHTML = uniqueNames.map(name => `
-                <button onclick="window.loadTimeline('${name}')" class="flex flex-col items-center group transition-transform hover:scale-105">
-                    <div class="w-24 h-24 rounded-full bg-navy-50 border-4 border-white shadow-lg flex items-center justify-center text-navy-900 text-3xl font-black mb-3 group-hover:bg-navy-100 transition-colors">${name.charAt(0).toUpperCase()}</div>
-                    <span class="text-lg font-bold text-slate-700">${name}</span>
+            
+            profileList.innerHTML = uniqueNames.map(name => `
+                <button type="button" onclick="window.switchProfile('${name}')" class="w-full text-left p-4 hover:bg-slate-50 flex items-center justify-between border-b border-slate-100 last:border-0 transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-navy-50 text-navy-900 flex items-center justify-center font-bold text-sm group-hover:bg-navy-900 group-hover:text-white transition-colors">
+                            ${name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">${name}</p>
+                            <p class="text-xs text-slate-500">Linked Profile</p>
+                        </div>
+                    </div>
+                    <span class="material-icons-round text-slate-300 text-sm group-hover:text-navy-900">chevron_right</span>
                 </button>
             `).join('');
         }
-    } catch (e) {
-        console.error("Profile Fetch Error:", e);
-        window.showToast("Failed to fetch records. Check connection.", "error");
+    } catch (error) {
+        console.error("Forensic Error:", error);
+        profileList.innerHTML = `<div class="p-8 text-rose-500 text-center font-bold">Permissions Error: Secure Link Failed.</div>`;
     }
 };
+
+window.switchProfile = (name) => {
+    currentPatientName = name;
+    document.getElementById('profile-selector-view').classList.add('hidden');
+    document.getElementById('clinical-feed-view').classList.remove('hidden');
+    
+    document.getElementById('profile-name').innerText = name;
+    document.getElementById('profile-avatar').innerText = name.charAt(0).toUpperCase();
+    
+    window.loadTimeline(name);
+};
+
 
 window.startFirstBooking = () => {
     const nameInput = document.getElementById('new-user-name');
