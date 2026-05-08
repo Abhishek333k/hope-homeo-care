@@ -842,21 +842,24 @@ async function loadActiveCampaign() {
             const img = document.getElementById('campaign-image');
             const box = document.getElementById('campaign-box');
             const closeBtn = document.getElementById('close-campaign-btn');
-            img.src = activeCampaign.imageUrl;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-            }, 50);
+            
+            if (modal && img && box) {
+                img.src = activeCampaign.imageUrl;
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    box.classList.remove('scale-95');
+                }, 50);
 
-            const closeModal = () => {
-                modal.classList.add('opacity-0');
-                box.classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-                sessionStorage.setItem('campaignSeen', 'true');
-            };
-            closeBtn?.addEventListener('click', closeModal);
-            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+                const closeModal = () => {
+                    modal.classList.add('opacity-0');
+                    box.classList.add('scale-95');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                    sessionStorage.setItem('campaignSeen', 'true');
+                };
+                closeBtn?.addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            }
         }
     } catch (error) { console.error("Failed to load campaign:", error); }
 }
