@@ -85,7 +85,6 @@ const fetchFamilyProfiles = async (phone) => {
         const container = document.getElementById('family-profiles-container');
         
         if (uniqueNames.length === 0) {
-            // NEW USER: First Time Booking UI
             selectorView.classList.remove('hidden');
             feedView.classList.add('hidden');
             container.innerHTML = `
@@ -102,11 +101,7 @@ const fetchFamilyProfiles = async (phone) => {
                     </div>
                 </div>
             `;
-        } else if (uniqueNames.length === 1) {
-            // Auto-load single profile
-            window.loadTimeline(uniqueNames[0]);
         } else {
-            // Netflix-style Multi-Profile UI
             selectorView.classList.remove('hidden');
             feedView.classList.add('hidden');
             container.innerHTML = uniqueNames.map(name => `
