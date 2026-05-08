@@ -820,7 +820,6 @@ window.closeReviewsModal = () => {
 };
 
 async function loadActiveCampaign() {
-    if (sessionStorage.getItem('campaignSeen')) return;
     try {
         const q = query(collection(db, "campaigns"), where("status", "==", "active"));
         const snapshot = await getDocs(q);
@@ -828,37 +827,87 @@ async function loadActiveCampaign() {
 
         const now = new Date();
         let activeCampaign = null;
+        let activeCampaignId = null;
+
+        // 1. Validation & ID-Based Memory Check
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.startTime && data.endTime) {
                 const start = data.startTime.toDate();
                 const end = data.endTime.toDate();
-                if (now >= start && now <= end) activeCampaign = data;
+                
+                // Only load if within time window AND this specific campaign hasn't been closed today
+                if (now >= start && now <= end && !sessionStorage.getItem(`closed_campaign_${doc.id}`)) {
+                    activeCampaign = data;
+                    activeCampaignId = doc.id;
+                }
             }
         });
 
         if (activeCampaign && activeCampaign.imageUrl) {
-            const modal = document.getElementById('campaign-modal');
-            const img = document.getElementById('campaign-image');
-            const box = document.getElementById('campaign-box');
-            const closeBtn = document.getElementById('close-campaign-btn');
-            img.src = activeCampaign.imageUrl;
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-            }, 50);
+            const preloader = new Image();
+            let hasTriggered = false;
 
-            const closeModal = () => {
-                modal.classList.add('opacity-0');
-                box.classList.add('scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-                sessionStorage.setItem('campaignSeen', 'true');
+            const showModal = () => {
+                if (hasTriggered) return;
+                hasTriggered = true;
+
+                const modal = document.getElementById('campaign-modal');
+                const img = document.getElementById('campaign-image');
+                const box = document.getElementById('campaign-box');
+                const closeBtn = document.getElementById('close-campaign-btn');
+
+                // 2. Closure Logic with ID Memory
+                const closeModal = () => {
+                    if (!modal || !box) return;
+                    modal.classList.add('opacity-0');
+                    box.classList.add('scale-95');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                    // Mark THIS SPECIFIC campaign as closed
+                    sessionStorage.setItem(`closed_campaign_${activeCampaignId}`, 'true');
+                };
+
+                closeBtn?.addEventListener('click', closeModal);
+                modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+                // 3. Aspect Ratio CLS Fix
+                if (img) {
+                    // Provide the mathematical bounds so the white box doesn't jump
+                    if (preloader.naturalWidth > 0) {
+                        img.style.aspectRatio = `${preloader.naturalWidth} / ${preloader.naturalHeight}`;
+                    }
+                    img.src = activeCampaign.imageUrl;
+                }
+
+                // 4. Trigger Reveal Animation safely
+                if (modal && box) {
+                    requestAnimationFrame(() => {
+                        modal.classList.remove('hidden');
+                        setTimeout(() => {
+                            modal.classList.remove('opacity-0');
+                            box.classList.remove('scale-95');
+                        }, 20); 
+                    });
+                }
             };
-            closeBtn?.addEventListener('click', closeModal);
-            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+            const fallbackTimer = setTimeout(showModal, 3000);
+
+            preloader.onload = () => {
+                clearTimeout(fallbackTimer);
+                showModal();
+            };
+
+            preloader.onerror = () => {
+                clearTimeout(fallbackTimer);
+                console.error("Campaign image failed to load.");
+            };
+
+            preloader.src = activeCampaign.imageUrl;
         }
-    } catch (error) { console.error("Failed to load campaign:", error); }
+    } catch (error) { 
+        console.error("Failed to load campaign:", error); 
+    }
 }
 
 let globalGalleryData = [];
