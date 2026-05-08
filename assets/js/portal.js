@@ -6,42 +6,6 @@ let currentCleanPhone = '';
 let currentPatientName = '';
 let globalAppointments = [];
 
-window.generateGoogleCalendarLink = (dateStr, timeStr, doctorName = "Dr. K. Nikhil Joshua") => {
-    try {
-        // Strictly parse "DD/MM/YYYY" format across the project
-        const [day, month, year] = dateStr.split('/');
-        if (!day || !month || !year) throw new Error("Invalid date format, expected DD/MM/YYYY");
-        
-        const parsedDateStr = `${year}-${month}-${day}`;
-        let start, end;
-
-        // Check if we have a real time or a placeholder from the homepage
-        if (!timeStr || timeStr === 'Requested via Homepage' || timeStr === 'N/A') {
-            // ALL-DAY EVENT
-            const eventDate = new Date(`${parsedDateStr}T00:00:00`);
-            start = eventDate.toISOString().split('T')[0].replace(/-/g, "");
-            
-            const endDate = new Date(eventDate.getTime() + 24 * 60 * 60000);
-            end = endDate.toISOString().split('T')[0].replace(/-/g, "");
-        } else {
-            // TIMED EVENT
-            const eventDate = new Date(`${parsedDateStr} ${timeStr}`);
-            start = eventDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
-            const endDate = new Date(eventDate.getTime() + 30 * 60000);
-            end = endDate.toISOString().replace(/-|:|[.]\d\d\d/g, "");
-        }
-
-        const title = encodeURIComponent(`Consultation with ${doctorName}`);
-        const details = encodeURIComponent(`Medical consultation at Hope Homeo Care.\n\nPlease bring any previous medical records.`);
-        const location = encodeURIComponent(`Hope Homeo Care, Mangalagiri, AP`);
-
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
-    } catch (e) {
-        console.warn("Date parsing failed for Calendar link", e);
-        return "#";
-    }
-};
-
 window.showToast = (message, type = 'success') => {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -61,101 +25,75 @@ window.showToast = (message, type = 'success') => {
 // --- STATE MANAGEMENT ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Rule Compliance: Always use the 10-digit clean phone
         currentCleanPhone = user.phoneNumber.replace('+91', '');
         document.getElementById('logout-btn').classList.remove('hidden');
         document.getElementById('switch-profile-btn').classList.remove('hidden');
-        await fetchFamilyProfiles();
+        
+        await fetchFamilyProfiles(currentCleanPhone);
     } else {
         window.location.href = 'index.html';
     }
 });
 
 // --- PROFILE GENERATOR ---
-const fetchFamilyProfiles = async () => {
-    const profileList = document.getElementById('family-profile-list');
-    if (!profileList) return;
-
+const fetchFamilyProfiles = async (phone) => {
     try {
-        // Source of Truth: The same collection used by the Admin Panel
-        const q = query(collection(db, "appointments"), where("phone", "==", currentCleanPhone));
+        // Query only by phone (Rule will allow this because of .endsWith() bridge)
+        const q = query(collection(db, "appointments"), where("phone", "==", phone));
         const snapshot = await getDocs(q);
         
-        // Cache all records for in-memory filtering (Prevents permission errors on secondary queries)
         globalAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Extract unique names linked to this 10-digit phone
+
+        // Mathematically extract unique names to serve as profiles
         const uniqueNames = [...new Set(globalAppointments.map(app => app.name).filter(Boolean))];
 
         const selectorView = document.getElementById('profile-selector-view');
-        const fullPhone = "+91" + currentCleanPhone;
-        
-        // FIRST TRY: Query with raw 10-digit phone
-        let q = query(collection(db, "patients"), where("phone", "==", currentCleanPhone));
-        let snapshot = await getDocs(q);
-        
-        // SECOND TRY: If empty, query with +91 prefix
-        if (snapshot.empty) {
-            q = query(collection(db, "patients"), where("phone", "==", fullPhone));
-            snapshot = await getDocs(q);
-        }
+        const feedView = document.getElementById('clinical-feed-view');
+        const container = document.getElementById('family-profiles-container');
 
-        globalAppointments = []; // Reset
-        let html = '';
-
-        if (snapshot.empty) {
-            html = `<div class="p-3 text-sm text-slate-500 text-center">No profiles found for this number.</div>`;
+        if (uniqueNames.length === 0) {
+            // NEW USER: First Time Booking UI
+            selectorView.classList.remove('hidden');
+            feedView.classList.add('hidden');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-10 w-full">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy-100 text-navy-600 mb-4">
+                        <span class="material-icons-round text-3xl">waving_hand</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome!</h3>
+                    <p class="text-slate-500 mb-8">It looks like you don't have any records yet.</p>
+                    <div class="max-w-xs mx-auto text-left">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
+                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 outline-none" placeholder="e.g., John Doe">
+                        <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 text-white font-bold py-3 rounded-xl">Start Booking</button>
+                    </div>
+                </div>
+            `;
+        } else if (uniqueNames.length === 1 && !currentPatientName) {
+            // Auto-load single profile
+            window.loadTimeline(uniqueNames[0]);
         } else {
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const name = data.name || "Unknown Patient";
-                const relation = data.relation || "Self";
-                const id = doc.id;
-                
-                // Push to global array for the feed engine to use later
-                globalAppointments.push({ id, ...data });
-
-                html += `
-                    <button type="button" onclick="window.switchProfile('${id}')" class="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between border-b border-slate-100 last:border-0 transition-colors group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-navy-50 text-navy-900 flex items-center justify-center font-bold text-sm group-hover:bg-navy-900 group-hover:text-white transition-colors">
-                                ${name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800 text-sm">${name}</p>
-                                <p class="text-xs text-slate-500">${relation}</p>
-                            </div>
-                        </div>
-                        <span class="material-icons-round text-slate-400 text-sm group-hover:text-navy-900">chevron_right</span>
-                    </button>
-                `;
-            });
+            // Netflix-style Multi-Profile UI
+            selectorView.classList.remove('hidden');
+            feedView.classList.add('hidden');
+            container.innerHTML = uniqueNames.map(name => `
+                <button onclick="window.loadTimeline('${name}')" class="flex flex-col items-center group transition-transform hover:scale-105">
+                    <div class="w-24 h-24 rounded-full bg-navy-50 border-4 border-white shadow-lg flex items-center justify-center text-navy-900 text-3xl font-black mb-3 group-hover:bg-navy-900 group-hover:text-white transition-colors">
+                        ${name.charAt(0).toUpperCase()}
+                    </div>
+                    <span class="text-lg font-bold text-slate-700">${name}</span>
+                </button>
+            `).join('');
         }
-        profileList.innerHTML = html;
-
-    } catch (error) {
-        console.error("Profile Fetch Error:", error);
-        profileList.innerHTML = `<div class="p-3 text-sm text-rose-500 text-center flex items-center justify-center gap-2"><span class="material-icons-round text-[16px]">error_outline</span> Failed to load profiles.</div>`;
+    } catch (e) {
+        console.error("Profile Fetch Error:", e);
+        window.showToast("Security Link Error. Please check Firestore Rules.", "error");
     }
-};
-
-window.switchProfile = async (profileId) => {
-    const profile = globalAppointments.find(p => p.id === profileId);
-    if (!profile) return;
-    
-    currentPatientName = profile.name;
-    document.getElementById('profile-selector-view').classList.add('hidden');
-    document.getElementById('clinical-feed-view').classList.remove('hidden');
-    
-    document.getElementById('profile-name').innerText = profile.name;
-    document.getElementById('profile-avatar').innerText = profile.name.charAt(0).toUpperCase();
-    
-    await window.loadTimeline(profile.name);
 };
 
 window.startFirstBooking = () => {
     const nameInput = document.getElementById('new-user-name');
-    if(!nameInput || !nameInput.value.trim()) return window.showToast('Please enter a patient name.', 'error');
+    if (!nameInput || !nameInput.value.trim()) return window.showToast('Please enter a name.', 'error');
     currentPatientName = nameInput.value.trim();
     document.getElementById('booking-for-name').innerText = currentPatientName;
     document.getElementById('internal-booking-modal').classList.remove('hidden');
@@ -163,87 +101,71 @@ window.startFirstBooking = () => {
 };
 
 // --- TIMELINE RENDERER ---
-window.loadTimeline = async (targetName) => {
+window.loadTimeline = (targetName) => {
     currentPatientName = targetName;
+    document.getElementById('profile-selector-view').classList.add('hidden');
+    document.getElementById('clinical-feed-view').classList.remove('hidden');
+
+    document.getElementById('profile-name').innerText = targetName;
+    document.getElementById('profile-avatar').innerText = targetName.charAt(0).toUpperCase();
+
+    // Filter and Sort in-memory to prevent multiple permission checks
+    const patientHistory = globalAppointments
+        .filter(app => app.name === targetName)
+        .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
     const feedContainer = document.getElementById('clinical-feed');
-    feedContainer.innerHTML = '<div class="p-10 text-center animate-pulse text-slate-400">Loading your medical history...</div>';
+    
+    if (patientHistory.length > 0) {
+        const oldest = patientHistory[patientHistory.length - 1];
+        document.getElementById('profile-member-since').innerText = `Patient Since: ${oldest.date}`;
+    } else {
+        document.getElementById('profile-member-since').innerText = `New Patient`;
+    }
 
-    try {
-        // Query appointments for this patient name AND phone
-        const q = query(
-            collection(db, "appointments"), 
-            where("phone", "==", currentCleanPhone), 
-            where("name", "==", targetName)
-        );
-        
-        const snapshot = await getDocs(q);
-        const patientHistory = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+    if (patientHistory.length === 0) {
+        feedContainer.innerHTML = '<div class="p-10 text-center text-slate-400">No medical records found.</div>';
+        return;
+    }
 
-        // Calculate "Member Since"
-        if (patientHistory.length > 0) {
-            const oldest = patientHistory[patientHistory.length - 1];
-            document.getElementById('profile-member-since').innerText = `Patient Since: ${oldest.date}`;
-        } else {
-            document.getElementById('profile-member-since').innerText = `New Patient`;
-        }
+    feedContainer.innerHTML = '';
+    patientHistory.forEach(app => {
+        const statusConfig = {
+            'pending': { color: 'amber', icon: 'schedule', label: 'Processing' },
+            'confirmed': { color: 'blue', icon: 'event_available', label: 'Upcoming' },
+            'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
+        }[app.status] || { color: 'slate', icon: 'info', label: app.status };
 
-        if (patientHistory.length === 0) {
-            feedContainer.innerHTML = '<div class="p-10 text-center text-slate-400">No medical records found for this profile.</div>';
-            return;
-        }
-
-        feedContainer.innerHTML = '';
-        patientHistory.forEach(app => {
-            const statusConfig = {
-                'pending': { color: 'amber', icon: 'schedule', label: 'Processing' },
-                'confirmed': { color: 'blue', icon: 'event_available', label: 'Upcoming' },
-                'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
-            }[app.status] || { color: 'slate', icon: 'info', label: app.status };
-
-            let medicalAdviceHTML = '';
-            if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
-                medicalAdviceHTML = `
-                    <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
-                        <p class="text-xs font-bold text-navy-600 uppercase tracking-widest mb-2 flex items-center gap-1"><span class="material-icons-round text-[14px]">medical_services</span> Clinical Notes</p>
-                        <p class="text-sm text-slate-700 whitespace-pre-wrap">${app.medicalAdvice}</p>
-                    </div>
-                `;
-            }
-
-            let calendarBtnHTML = '';
-            if (app.status === 'confirmed') {
-                calendarBtnHTML = `
-                    <a href="${window.generateGoogleCalendarLink(app.date, app.time)}" target="_blank" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                        <span class="material-icons-round text-[18px]">event</span> Add to Google Calendar
-                    </a>
-                `;
-            }
-
-            feedContainer.innerHTML += `
-                <div class="relative">
-                    <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
-                    <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}${app.time && app.time !== 'Requested via Homepage' && app.time !== 'N/A' ? ' &bull; ' + app.time : ''}</span>
-                                <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
-                                <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
-                            </span>
-                        </div>
-                        ${medicalAdviceHTML}
-                        ${calendarBtnHTML}
-                    </div>
+        let medicalAdviceHTML = '';
+        if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
+            medicalAdviceHTML = `
+                <div class="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                    <p class="text-xs font-bold text-navy-600 uppercase tracking-widest mb-2 flex items-center gap-1">
+                        <span class="material-icons-round text-[14px]">medical_services</span> Clinical Notes
+                    </p>
+                    <p class="text-sm text-slate-700 whitespace-pre-wrap">${app.medicalAdvice}</p>
                 </div>
             `;
-        });
-    } catch (e) {
-        console.error("Timeline Render Error:", e);
-        feedContainer.innerHTML = '<div class="p-10 text-center text-rose-500">Failed to load medical history.</div>';
-    }
+        }
+
+        feedContainer.innerHTML += `
+            <div class="relative">
+                <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
+                <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}</span>
+                            <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
+                            <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
+                        </span>
+                    </div>
+                    ${medicalAdviceHTML}
+                </div>
+            </div>
+        `;
+    });
 };
 
 // --- NAVIGATION & BOOKING ---
@@ -319,19 +241,19 @@ const renderSlots = async (dateStr) => {
     try {
         const calendarSnap = await getDoc(doc(db, "settings", "calendar"));
         const blockedSlots = calendarSnap.exists() ? (calendarSnap.data().blockedSlots || []) : [];
-        
+
         ['morning', 'afternoon', 'evening'].forEach(session => {
             const container = document.getElementById(`slots-${session}`);
             if (!container) return;
-            
+
             const { start, end } = sessionSlots[session];
             const slots = generateSlots(start, end);
-            
+
             container.innerHTML = slots.map(slot => {
-                const isBlocked = blockedSlots.includes(`${dateStr}|${slot}`) || 
-                                 blockedSlots.includes(`${dateStr}|${session.charAt(0).toUpperCase() + session.slice(1)}`) ||
-                                 blockedSlots.includes(`${dateStr}|All`);
-                
+                const isBlocked = blockedSlots.includes(`${dateStr}|${slot}`) ||
+                    blockedSlots.includes(`${dateStr}|${session.charAt(0).toUpperCase() + session.slice(1)}`) ||
+                    blockedSlots.includes(`${dateStr}|All`);
+
                 return `
                     <button type="button" 
                         ${isBlocked ? 'disabled' : ''}

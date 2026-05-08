@@ -2781,3 +2781,20 @@ video {
     z-index: -1; 
     pointer-events: none; 
 }
+
+/* SilenVault-Style Container Watermark */
+.bg-crest-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-image: url('../images/logo.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 70%; /* Scales relative to the text container, not the screen */
+    opacity: 0.03;
+    z-index: 0; /* Sits at the bottom of the container's stacking context */
+    pointer-events: none;
+}
