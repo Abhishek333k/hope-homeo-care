@@ -867,19 +867,36 @@ let currentGalleryIndex = 0;
 const loadPublicGallery = async () => {
     const previewGrid = document.getElementById('gallery-preview-grid');
     if (!previewGrid) return;
+    
     try {
-        const q = query(collection(db, "gallery"), orderBy("orderIndex", "asc"));
+        // MATCHED ZONE B SCHEMA: Sorting by 'position'
+        const q = query(collection(db, "gallery"), orderBy("position", "asc"));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) return;
+
+        // Handle Empty State (If Dr. Joshua deletes all images)
+        if (snapshot.empty) {
+            previewGrid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400 font-medium">Gallery is currently being updated.</div>';
+            const thumbContainer = document.getElementById('gallery-thumbnails');
+            if (thumbContainer) thumbContainer.innerHTML = '';
+            globalGalleryData = [];
+            return;
+        }
 
         globalGalleryData = [];
-        snapshot.forEach(doc => globalGalleryData.push(doc.data().imageUrl));
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // MATCHED ZONE B SCHEMA: Strict mapping to imageUrl
+            if (data.imageUrl) {
+                globalGalleryData.push(data.imageUrl);
+            }
+        });
 
+        // Render Preview Grid (Top 3 Images)
         let previewHtml = '';
         for(let i=0; i < Math.min(3, globalGalleryData.length); i++) {
             const hideClass = i > 0 ? 'hidden md:block' : '';
             previewHtml += `
-                <div onclick="window.openFullGallery(${i})" class="${hideClass} rounded-2xl overflow-hidden cursor-pointer group relative shadow-sm">
+                <div onclick="window.openFullGallery(${i})" class="${hideClass} rounded-2xl overflow-hidden cursor-pointer group relative shadow-sm aspect-square md:aspect-auto">
                     <img src="${globalGalleryData[i]}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                     <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/30 transition-colors flex items-center justify-center">
                         <span class="material-icons-round text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg">zoom_out_map</span>
@@ -889,15 +906,19 @@ const loadPublicGallery = async () => {
         }
         previewGrid.innerHTML = previewHtml;
 
+        // Render Bottom Thumbnails for the Advanced Modal
         const thumbContainer = document.getElementById('gallery-thumbnails');
         if (thumbContainer) {
             let thumbHtml = '';
             globalGalleryData.forEach((url, idx) => {
-                thumbHtml += `<img onclick="window.setGalleryImage(${idx})" id="thumb-${idx}" src="${url}" class="h-full aspect-video object-cover rounded-lg cursor-pointer opacity-50 hover:opacity-100 transition-all border-2 border-transparent snap-center">`;
+                thumbHtml += `<img onclick="window.setGalleryImage(${idx})" id="thumb-${idx}" src="${url}" class="h-16 w-24 object-cover rounded-lg cursor-pointer opacity-50 hover:opacity-100 transition-all border-2 border-transparent shrink-0">`;
             });
             thumbContainer.innerHTML = thumbHtml;
         }
-    } catch (error) { console.error("Gallery fetch error:", error); }
+    } catch (error) { 
+        console.error("Gallery fetch error:", error); 
+        previewGrid.innerHTML = '<div class="col-span-full text-center py-8 text-rose-400 font-medium">Database index building. Please wait a few minutes.</div>';
+    }
 };
 
 window.setGalleryImage = (index) => {
