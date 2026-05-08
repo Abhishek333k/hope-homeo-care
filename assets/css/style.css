@@ -2763,7 +2763,7 @@ video {
     }
 }
 
-/* Global Overlay Watermark Crest */
+/* Global Overlay Watermark Crest (SVG Upgraded) */
 .bg-crest {
     position: fixed;
     top: 50%;
@@ -2771,18 +2771,18 @@ video {
     transform: translate(-50%, -50%);
     width: 100%;
     height: 100vh;
-    background-image: url('../images/logo.webp');
+    
+    /* THE UPGRADE: Pointing to the transparent vector */
+    background-image: url('../images/logo.svg'); 
+    
     background-repeat: no-repeat;
     background-position: center;
     background-size: 85vmin;
-
-    /* THE FIX: Overlay Architecture */
-    opacity: 0.03;
-    /* Bumped slightly to ensure visibility over dark text */
-    z-index: 9999;
-    /* Forces it over all solid bg-white sections */
-    pointer-events: none;
-    /* Guarantees it never blocks a button click */
-
+    
+    /* The Overlay Architecture */
+    opacity: 0.04; /* SVGs are much crisper, you can slightly bump this to 0.04 or 0.05 */
+    z-index: 9999; 
+    pointer-events: none; 
+    
     transition: all 0.5s ease;
 }
