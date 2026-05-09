@@ -171,6 +171,7 @@ window.loadTimeline = (targetName) => {
 // --- NAVIGATION & BOOKING ---
 document.getElementById('switch-profile-btn')?.addEventListener('click', () => {
     document.getElementById('clinical-feed-view').classList.add('hidden');
+    document.getElementById('book-appointment-view').classList.add('hidden');
     document.getElementById('profile-selector-view').classList.remove('hidden');
 });
 
@@ -187,11 +188,6 @@ window.closeInternalBooking = () => {
     setTimeout(() => document.getElementById('book-appointment-view').classList.add('hidden'), 300);
 };
 
-window.reopenProfileDrawer = () => {
-    document.getElementById('clinical-feed-view').classList.add('hidden');
-    document.getElementById('book-appointment-view').classList.add('hidden');
-    document.getElementById('profile-selector-view').classList.remove('hidden');
-};
 
 // --- TIME SLOT LOGIC ---
 const sessionSlots = {
