@@ -63,8 +63,8 @@ const fetchFamilyProfiles = async (phone) => {
                     <h3 class="text-2xl font-bold text-slate-800 mb-2">Welcome!</h3>
                     <p class="text-slate-500 mb-8">It looks like you don't have any records yet.</p>
                     <div class="max-w-xs mx-auto text-left">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
-                        <input type="text" id="new-user-name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 outline-none" placeholder="e.g., John Doe">
+                        <label for="new-user-name" class="block text-xs font-bold text-slate-500 uppercase mb-1">Patient Name</label>
+                        <input type="text" id="new-user-name" name="name" autocomplete="name" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl mb-4 outline-none" placeholder="e.g., John Doe">
                         <button onclick="window.startFirstBooking()" class="w-full bg-navy-900 text-white font-bold py-3 rounded-xl">Start Booking</button>
                     </div>
                 </div>
@@ -96,8 +96,8 @@ window.startFirstBooking = () => {
     if (!nameInput || !nameInput.value.trim()) return window.showToast('Please enter a name.', 'error');
     currentPatientName = nameInput.value.trim();
     document.getElementById('booking-for-name').innerText = currentPatientName;
-    document.getElementById('internal-booking-modal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('internal-booking-modal').classList.remove('opacity-0'), 10);
+    document.getElementById('book-appointment-view').classList.remove('hidden');
+    setTimeout(() => document.getElementById('book-appointment-view').classList.remove('opacity-0'), 10);
 };
 
 // --- TIMELINE RENDERER ---
@@ -178,13 +178,19 @@ document.getElementById('logout-btn')?.addEventListener('click', () => signOut(a
 
 window.openInternalBooking = () => {
     document.getElementById('booking-for-name').innerText = currentPatientName;
-    document.getElementById('internal-booking-modal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('internal-booking-modal').classList.remove('opacity-0'), 10);
+    document.getElementById('book-appointment-view').classList.remove('hidden');
+    setTimeout(() => document.getElementById('book-appointment-view').classList.remove('opacity-0'), 10);
 };
 
 window.closeInternalBooking = () => {
-    document.getElementById('internal-booking-modal').classList.add('opacity-0');
-    setTimeout(() => document.getElementById('internal-booking-modal').classList.add('hidden'), 300);
+    document.getElementById('book-appointment-view').classList.add('opacity-0');
+    setTimeout(() => document.getElementById('book-appointment-view').classList.add('hidden'), 300);
+};
+
+window.reopenProfileDrawer = () => {
+    document.getElementById('clinical-feed-view').classList.add('hidden');
+    document.getElementById('book-appointment-view').classList.add('hidden');
+    document.getElementById('profile-selector-view').classList.remove('hidden');
 };
 
 // --- TIME SLOT LOGIC ---
@@ -294,7 +300,23 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
             medicalAdvice: ''
         });
         window.showToast("Appointment requested successfully!");
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(async () => {
+            // Reset the UI Form visually
+            document.getElementById('internal-booking-form').reset();
+            document.getElementById('int-time-slot-column').classList.add('hidden', 'opacity-0');
+            
+            // Re-fetch the data from Firebase silently in the background
+            await fetchFamilyProfiles(currentCleanPhone); // Re-fetch all
+            await window.loadTimeline(currentPatientName);
+            
+            // Switch back to the Timeline View seamlessly
+            document.getElementById('book-appointment-view').classList.add('hidden');
+            document.getElementById('clinical-feed-view').classList.remove('hidden');
+            
+            // Reset the button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "Submit Request";
+        }, 1500);
     } catch (error) {
         console.error(error);
         window.showToast("Submission failed.", "error");
@@ -305,14 +327,43 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
 
 // --- INITIALIZATION ---
 if (typeof flatpickr !== 'undefined') {
-    flatpickr("#int-book-date", {
+    const internalDatePicker = flatpickr("#int-book-date", {
         minDate: "today",
+        disableMobile: true, // Prevent native mobile bypass
         disable: [(date) => date.getDay() === 0],
         dateFormat: "d/m/Y",
         onChange: (selectedDates, dateStr) => {
             document.getElementById('int-time-slot-column').classList.remove('hidden', 'opacity-0');
-            document.getElementById('internal-booking-modal-content').classList.replace('max-w-md', 'max-w-4xl');
+            document.getElementById('book-appointment-view-content').classList.replace('max-w-md', 'max-w-4xl');
             renderSlots(dateStr);
         }
     });
+
+    // Fetch and disable fully blocked dates
+    async function syncInternalBlockedDates() {
+        try {
+            const settingsDoc = await getDoc(doc(db, "settings", "calendar"));
+            if (settingsDoc.exists()) {
+                const blockedSlots = settingsDoc.data().blockedSlots || [];
+                const dateMap = {};
+                blockedSlots.forEach(slot => {
+                    const [date, time] = slot.split('_');
+                    if (!dateMap[date]) dateMap[date] = [];
+                    dateMap[date].push(time);
+                });
+
+                const fullyBlockedDates = Object.keys(dateMap).filter(date => 
+                    dateMap[date].includes('morning') && dateMap[date].includes('evening')
+                );
+
+                if (fullyBlockedDates.length > 0) {
+                    internalDatePicker.set('disable', [
+                        (date) => date.getDay() === 0,
+                        ...fullyBlockedDates
+                    ]);
+                }
+            }
+        } catch (error) { console.error("Failed to sync internal calendar blocks:", error); }
+    }
+    syncInternalBlockedDates();
 }

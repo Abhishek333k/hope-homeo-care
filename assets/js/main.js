@@ -335,11 +335,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof flatpickr !== 'undefined') {
             fp = flatpickr(dateInput, {
                 minDate: "today",
-                disable: [ (date) => (date.getDay() === 0) ],
+                disableMobile: true, // CRITICAL: Forces custom UI on phones so rules aren't bypassed
+                disable: [(date) => date.getDay() === 0], // Disable Sundays
                 dateFormat: "d/m/Y",
                 static: true,
-                disableMobile: "true",
-                onChange: (selectedDates, dateStr) => {
+                onChange: async function(selectedDates, dateStr, instance) {
                     const modalContent = document.getElementById('booking-modal-content');
                     const timeColumn = document.getElementById('time-slot-column');
                     
@@ -354,6 +354,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPills(dateStr);
                 }
             });
+
+            // Instantly fetch fully blocked dates to disable them on the calendar UI
+            async function syncFullyBlockedDates() {
+                try {
+                    const settingsDoc = await getDoc(doc(db, "settings", "calendar"));
+                    if (settingsDoc.exists()) {
+                        const blockedSlots = settingsDoc.data().blockedSlots || [];
+                        const dateMap = {};
+                        
+                        // Group blocked slots by date
+                        blockedSlots.forEach(slot => {
+                            const [date, time] = slot.split('_');
+                            if (!dateMap[date]) dateMap[date] = [];
+                            dateMap[date].push(time);
+                        });
+
+                        // Find dates where BOTH morning and evening are blocked
+                        const fullyBlockedDates = Object.keys(dateMap).filter(date => 
+                            dateMap[date].includes('morning') && dateMap[date].includes('evening')
+                        );
+
+                        if (fullyBlockedDates.length > 0) {
+                            fp.set('disable', [
+                                (date) => date.getDay() === 0, // Keep Sundays
+                                ...fullyBlockedDates // Add fully blocked "YYYY-MM-DD" dates
+                            ]);
+                        }
+                    }
+                } catch (error) { console.error("Failed to sync calendar blocks:", error); }
+            }
+            syncFullyBlockedDates();
         }
 
         const fetchSlots = async () => {
@@ -419,23 +450,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Close on Escape key (Universal Modal Handler)
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            if (!modal.classList.contains('hidden')) {
-                window.closeBookingModal();
-            }
-            const galModal = document.getElementById('advanced-gallery-modal');
-            if (galModal && !galModal.classList.contains('hidden')) {
-                window.closeFullGallery();
-            }
-            const loginModal = document.getElementById('login-modal');
-            if (loginModal && !loginModal.classList.contains('hidden')) {
-                // closeLogin is local, but we can't easily access it if it's trapped in a block
-                // Re-declaring for Escape safety or using state attributes
-            }
-        }
-    });
 
     const submitBtn = document.getElementById('booking-submit-btn');
     if (submitBtn) {
@@ -626,15 +640,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
         closeLoginBtn?.addEventListener('click', closeLogin);
 
-        // Global Escape & Enter Handler for Login Modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const loginModal = document.getElementById('login-modal');
-                if (loginModal && !loginModal.classList.contains('hidden')) {
-                    closeLogin();
-                }
-            }
-        });
 
         const phoneInput = document.getElementById('login-phone');
         const otpInput = document.getElementById('login-otp');
@@ -996,13 +1001,38 @@ window.setGalleryImage = (index) => {
 window.nextGalleryImage = () => window.setGalleryImage(currentGalleryIndex + 1);
 window.prevGalleryImage = () => window.setGalleryImage(currentGalleryIndex - 1);
 
+// GLOBAL MODAL CONTROLLER
 document.addEventListener('keydown', (e) => {
-    const modal = document.getElementById('advanced-gallery-modal');
-    if (modal && !modal.classList.contains('hidden')) {
-        if (e.key === 'ArrowRight') window.nextGalleryImage();
-        if (e.key === 'ArrowLeft') window.prevGalleryImage();
-        if (e.key === 'Escape') window.closeFullGallery();
+    if (e.key === 'Escape') {
+        // Prioritize Advanced Gallery
+        if (typeof window.closeFullGallery === 'function' && !document.getElementById('advanced-gallery-modal')?.classList.contains('hidden')) {
+            window.closeFullGallery();
+            return;
+        }
+        // Prioritize Campaign
+        const campaignModal = document.getElementById('campaign-modal');
+        if (campaignModal && !campaignModal.classList.contains('hidden')) {
+            const closeBtn = document.getElementById('close-campaign-btn');
+            if (closeBtn) closeBtn.click();
+            return;
+        }
+        // Prioritize Booking
+        if (typeof window.closeBookingModal === 'function' && !document.getElementById('booking-modal')?.classList.contains('hidden')) {
+            window.closeBookingModal();
+            return;
+        }
+        // Prioritize Login
+        const loginModal = document.getElementById('login-modal');
+        if (loginModal && !loginModal.classList.contains('hidden')) {
+            // Note: closeLogin is a local closure in DOMContentLoaded, 
+            // but we can trigger close-login-btn click or similar
+            document.getElementById('close-login-btn')?.click();
+            return;
+        }
     }
+    // Add Gallery Arrow Keys
+    if (e.key === 'ArrowRight' && typeof window.nextGalleryImage === 'function') window.nextGalleryImage();
+    if (e.key === 'ArrowLeft' && typeof window.prevGalleryImage === 'function') window.prevGalleryImage();
 });
 
 fetchBlogPosts();
