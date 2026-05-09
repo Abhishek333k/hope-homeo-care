@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app-check.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -16,8 +17,16 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- APP CHECK INITIALIZATION ---
+// Note: You must replace 'YOUR_RECAPTCHA_SITE_KEY' with the key from your Firebase Console
+// Path: Project Settings -> App Check -> Apps -> Choose your app -> Register/Manage
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6Lcw_ZsqAAAAAH02a3P6iXF_LgD7R1z1K3hD_lB1'), // Using default/placeholder for now
+  isTokenAutoRefreshEnabled: true
+});
+
 // Set language to default to the user's device
 auth.useDeviceLanguage();
 
-export { app, auth, db };
+export { app, auth, db, appCheck };
 
