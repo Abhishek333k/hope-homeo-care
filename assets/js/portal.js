@@ -25,11 +25,17 @@ window.showToast = (message, type = 'success') => {
 // --- STATE MANAGEMENT ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        console.log("Portal Auth Success. Phone:", user.phoneNumber);
         currentCleanPhone = user.phoneNumber.replace('+91', '');
         document.getElementById('logout-btn').classList.remove('hidden');
         document.getElementById('switch-profile-btn').classList.remove('hidden');
         
         await fetchFamilyProfiles(currentCleanPhone);
+        
+        // Sync calendar only after we are sure user is authenticated
+        if (typeof syncInternalBlockedDates === 'function') {
+            await syncInternalBlockedDates();
+        }
     } else {
         window.location.href = 'index.html';
     }
@@ -365,5 +371,5 @@ if (typeof flatpickr !== 'undefined') {
             }
         } catch (error) { console.error("Failed to sync internal calendar blocks:", error); }
     }
-    syncInternalBlockedDates();
+    window.syncInternalBlockedDates = syncInternalBlockedDates;
 }
