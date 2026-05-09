@@ -151,15 +151,17 @@
                 <a href="#blogs"
                     class="text-gray-600 hover:text-navy-800 font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2 rounded-md px-1">Blog</a>
             </nav>
-            <button id="nav-portal-btn"
-                class="hidden md:flex items-center gap-2 border-2 border-navy-100 text-navy-900 hover:bg-navy-50 px-6 py-2.5 rounded-full font-semibold transition-all duration-300 mr-4 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2">
-                <span aria-hidden="true" class="material-icons-round text-[20px]">account_circle</span>
-                Patient Portal
-            </button>
-            <a href="javascript:void(0)" onclick="window.openBookingModal()"
-                class="bg-navy-900 hover:bg-navy-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hidden md:block focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2">
-                Book Appointment
-            </a>
+            <div class="hidden md:flex items-center gap-4">
+                <button id="nav-portal-btn"
+                    class="flex items-center gap-2 border-2 border-navy-100 text-navy-900 hover:bg-navy-50 px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2">
+                    <span aria-hidden="true" class="material-icons-round text-[20px]">account_circle</span>
+                    Patient Portal
+                </button>
+                <a href="javascript:void(0)" onclick="window.openBookingModal()"
+                    class="bg-navy-900 hover:bg-navy-800 text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-navy-500 focus:ring-offset-2">
+                    Book Appointment
+                </a>
+            </div>
 
             <!-- Mobile Menu Button -->
             <button id="mobile-menu-btn"
