@@ -18,7 +18,13 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- APP CHECK INITIALIZATION (RECAPTCHA ENTERPRISE) ---
+// 🛠️ THE FIX: Automatically trigger Debug Mode if running on local computer
+if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    console.log("🛠️ Local Development detected: Forcing App Check Debug Mode.");
+}
+
+// Initialize App Check AFTER the debug token is set
 const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaEnterpriseProvider('6LfeauEsAAAAAINbj29w7QYks4oofV1CzV_MLOxZ'),
   isTokenAutoRefreshEnabled: true 
