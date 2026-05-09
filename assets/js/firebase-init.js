@@ -32,4 +32,4 @@ const db = getFirestore(app);
 
 auth.useDeviceLanguage();
 
-export { app, auth, db };
+export { app, auth, db, appCheck };
