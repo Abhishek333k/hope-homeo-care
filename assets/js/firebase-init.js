@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app-check.js";
+// IMPORT V3 PROVIDER
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app-check.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -13,25 +13,23 @@ const firebaseConfig = {
   appId: "1:962992614809:web:8d61d27c8881588c59f708"
 };
 
-// Refactored initialization to prevent HMR crashes during development/hot-reloading
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
 
-// 🛠️ THE FIX: Automatically trigger Debug Mode if running on local computer
+// 1. Set Debug Flag FIRST
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    console.log("🛠️ Local Development detected: Forcing App Check Debug Mode.");
 }
 
-// Initialize App Check AFTER the debug token is set
+// 2. Initialize App Check SECOND (Must happen before Auth/Firestore)
 const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider('6LfeauEsAAAAAINbj29w7QYks4oofV1CzV_MLOxZ'),
+  provider: new ReCaptchaV3Provider('6Lcw_ZsqAAAAAH02a3P6iXF_LgD7R1z1K3hD_lB1'),
   isTokenAutoRefreshEnabled: true 
 });
 
-// Set language to default to the user's device
+// 3. Initialize Auth & DB THIRD
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 auth.useDeviceLanguage();
 
-export { app, auth, db, appCheck };
-
+export { app, auth, db };
