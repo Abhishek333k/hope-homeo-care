@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app-check.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVZHO-avENaKejMjAUexsaem-Dusljvzo",
@@ -17,14 +16,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- APP CHECK INITIALIZATION (RECAPTCHA ENTERPRISE) ---
-const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaEnterpriseProvider('6LfeauEsAAAAAINbj29w7QYks4oofV1CzV_MLOxZ'),
-  isTokenAutoRefreshEnabled: true
-});
-
 // Set language to default to the user's device
 auth.useDeviceLanguage();
 
-export { app, auth, db, appCheck };
+export { app, auth, db };
 
