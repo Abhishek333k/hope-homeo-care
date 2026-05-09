@@ -2,7 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    ::selection {
+        background-color: #0d1925;
+        color: #ffffff;
+    }
+
+    /* --- PREMIUM SCROLLBAR --- */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 20px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+        background-clip: content-box;
+    }
+
+    /* Flatpickr Deep Navy Theme Overrides */
+    .flatpickr-calendar {
+        background: #ffffff !important;
+        border-radius: 1.5rem !important;
+        box-shadow: 0 25px 50px -12px rgba(13, 25, 37, 0.2) !important;
+        border: 1px solid #e2e8f0 !important;
+        font-family: 'Outfit', sans-serif !important;
+        padding: 0.5rem !important;
+    }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+        background: #0d1925 !important;
+        border-color: #0d1925 !important;
+        border-radius: 0.75rem !important;
+    }
+    .flatpickr-day:hover {
+        background: #f1f5f9 !important;
+        border-radius: 0.75rem !important;
+    }
+    .flatpickr-months .flatpickr-month {
+        color: #0d1925 !important;
+        fill: #0d1925 !important;
+    }
+    .flatpickr-weekday {
+        color: #64748b !important;
+        font-weight: 700 !important;
+    }
+}
+
 @layer utilities {
+    /* --- BRAND WATERMARKS --- */
     .bg-crest {
         position: fixed;
         top: 50%;
@@ -36,5 +94,27 @@
         z-index: 0;
         pointer-events: none;
         filter: grayscale(1);
+    }
+
+    /* --- GLASSMORPHISM & UTILITIES --- */
+    .glass-header {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .hover-lift {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 }
