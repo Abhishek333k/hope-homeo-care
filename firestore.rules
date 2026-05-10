@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.get('email', '') != '' &&
+             request.auth.token.email in get(/databases/$(database)/documents/settings/admin_users).data.allowed_emails;
+    }
+
+    function isPatient() {
+      return request.auth != null && request.auth.token.get('phone_number', '') != '';
+    }
+
+    match /campaigns/{document=**} { allow read: if true; allow write: if isAdmin(); }
+    match /gallery/{document=**} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{document=**} { allow read: if true; allow write: if isAdmin(); }
+
+    match /appointments/{appointmentId} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'date', 'symptoms', 'consent', 'timestamp'])
+                    && request.resource.data.consent == true
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0;
+      
+      // FIX: Uses strict string concatenation
+      allow read: if isAdmin() || (isPatient() && request.auth.token.phone_number == '+91' + resource.data.phone);
+      allow update, delete: if isAdmin();
+    }
+
+    match /patients/{patientId} {
+      // FIX: Uses strict string concatenation
+      allow read: if isAdmin() || (isPatient() && request.auth.token.phone_number == '+91' + resource.data.phone);
+      allow write: if isAdmin();
+
+      match /logs/{logId} {
+        // FIX: Uses native array slicing [3:13] to safely extract the 10-digit number from the +91 string
+        allow read: if isAdmin() || (isPatient() && patientId.matches('^' + request.auth.token.phone_number[3:13] + '.*'));
+        allow write: if isAdmin();
+      }
+    }
+  }
+}
