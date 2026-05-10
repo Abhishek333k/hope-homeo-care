@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hopehomeocare.web.app/sitemap.xml
+Sitemap: https://hopehomeocare.com/sitemap.xml
