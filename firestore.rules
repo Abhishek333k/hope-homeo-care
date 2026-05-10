@@ -17,7 +17,7 @@ service cloud.firestore {
     match /settings/{document=**} { allow read: if true; allow write: if isAdmin(); }
 
     match /appointments/{appointmentId} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'date', 'symptoms', 'consent', 'timestamp'])
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'consent'])
                     && request.resource.data.consent == true
                     && request.resource.data.name is string
                     && request.resource.data.name.size() > 0;
