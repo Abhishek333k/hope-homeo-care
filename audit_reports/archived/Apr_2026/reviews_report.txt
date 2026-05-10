@@ -1,0 +1,66 @@
+GOOGLE MAP REVIEWS INTEGRATION REPORT - HOPE HOMEO CARE
+======================================================
+
+1. ARCHITECTURAL OVERVIEW
+-------------------------
+The Google Reviews system is designed as a "Headless Sync" architecture. Instead of fetching reviews directly from the client (which exposes API keys and hits rate limits), a background script fetches them every 2 hours and saves them as a static JSON file.
+
+2. CONFIGURATION & KEYS
+-----------------------
+- Google Place ID: [Stored as GitHub Secret: PLACE_ID]
+- Google API Key:  [Stored as GitHub Secret: API_KEY]
+  * Permission Required: "Places API (New)" or "Places API" enabled in Google Cloud Console.
+  * Fields Requested: name, rating, reviews
+
+3. ENVIRONMENT & AUTOMATION
+---------------------------
+- Automation Platform: GitHub Actions
+- Workflow File: .github/workflows/sync-reviews.yml
+- Frequency: Every 2 hours (cron: '0 */2 * * *')
+- Process Flow:
+  1. Boot Ubuntu VM.
+  2. Install Node.js 22.
+  3. Execute 'node scripts/fetch-reviews.js'.
+  4. Script generates 'assets/data/reviews.json'.
+  5. Action commits the updated JSON back to the 'main' branch.
+
+4. BACKEND SYNC SCRIPT (scripts/fetch-reviews.js)
+-----------------------------------------------
+```javascript
+const endpoint = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${PLACE_ID}&fields=name,rating,reviews&key=${API_KEY}`;
+
+// Logic:
+// 1. Fetch data from Google.
+// 2. Filter: Only reviews with Rating >= 4 are kept.
+// 3. Extraction: author_name, rating, text, relative_time_description, profile_photo_url.
+// 4. Output: assets/data/reviews.json
+```
+
+5. FRONTEND INTEGRATION (assets/js/main.js)
+-----------------------------------------
+The frontend uses the `loadGoogleReviews()` function to ingest the local data:
+
+```javascript
+async function loadGoogleReviews() {
+    const response = await fetch('./assets/data/reviews.json');
+    const reviews = await response.json();
+    
+    // Renders to:
+    // - #testimonials-grid (Compact Carousel Preview)
+    // - #modal-reviews-list (Full Scrollable Modal List)
+}
+```
+
+6. UI CONTAINERS (index.html)
+---------------------------
+- Testimonial Section: <section id="testimonials">
+- Grid Container: <div id="testimonials-grid">
+- Full List Modal: <div id="reviews-modal">
+
+7. SUMMARY OF DATA FLOW
+-----------------------
+[Google Cloud] -> [GitHub Action] -> [reviews.json] -> [main.js] -> [Patient View]
+
+======================================================
+REPORT GENERATED: 2026-04-18
+======================================================

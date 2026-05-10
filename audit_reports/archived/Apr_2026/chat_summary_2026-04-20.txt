@@ -1,0 +1,158 @@
+================================================================================
+              PATIENT PORTAL AUDIT & FIX SUMMARY
+              Generated: 2026-04-20
+================================================================================
+
+PROJECT: Hope Homeo Care Website + Patient Portal
+FRAMEWORK: Static HTML/JS with Firebase (Auth + Firestore)
+
+================================================================================
+                            AUDIT SCOPE
+================================================================================
+
+The user requested a deep audit of why the Patient Portal was not loading any
+data and to fix any login logic failures.
+
+FILES ANALYZED:
+- index.html (main website)
+- patient-portal.html (portal page)
+- assets/js/main.js (public site logic + login)
+- assets/js/portal.js (portal logic)
+- assets/js/firebase-init.js (Firebase config)
+
+FIREBASE STRUCTURE:
+- Collection: appointments (stores booking requests)
+- Collection: patients (stores patient profiles)
+- Sub-collection: patients/{id}/logs (medical records)
+- Collection: settings/calendar (blocked time slots)
+- Collection: campaigns, gallery (public content)
+
+================================================================================
+                          ISSUES FOUND
+================================================================================
+
+1. PHONE NUMBER FORMAT MISMATCH (ROOT CAUSE - CRITICAL)
+   ---------------------------------------------------------------------------
+   Problem: The portal queried Firestore using phone numbers WITHOUT the +91
+   prefix (e.g., "9999999999"), but appointments were stored WITH the prefix
+   (e.g., "+919999999999"). This caused zero data to load.
+
+   Code Flow:
+   - Public booking (main.js line 210): stored as "+91" + phone
+   - Portal query (portal.js line 150): queried with "9999999999"
+   - Result: No matches found in Firestore
+
+   Fix Applied:
+   - Added currentFullPhone variable to store phone with +91
+   - Updated loadAppointments() to query BOTH formats for backward compatibility
+   - Updated internal booking to store with +91 format
+   - Updated patient profile query to try both formats
+
+2. COMPOSITE ID GENERATION ISSUE (MEDIUM)
+   ---------------------------------------------------------------------------
+   Problem: The composite ID for medical records was generated inconsistently.
+   The portal used clean phone (without +91) but may have patients stored with
+   +91 prefix in Firestore.
+
+   Fix Applied:
+   - Modified selectProfile() to accept full phone with +91
+   - Added backward compatibility for patients collection queries
+
+3. RECAPTCHA VERIFIER RESET (LOGIC FIX)
+   ---------------------------------------------------------------------------
+   Problem: The RecaptchaVerifier wasn't being reset between login attempts,
+   which could cause issues when reopening the login modal.
+
+   Fix Applied:
+   - Added window.recaptchaVerifier = null before opening login modal
+
+================================================================================
+                          FILES MODIFIED
+================================================================================
+
+1. assets/js/portal.js
+   - Added currentFullPhone variable
+   - Updated patient profile query to try both phone formats
+   - Updated loadAppointments() for backward compatibility
+   - Updated internal booking to store with +91
+   - Added debug console.log statements for troubleshooting
+
+2. assets/js/main.js
+   - Added RecaptchaVerifier reset before opening login modal
+
+================================================================================
+                    REMAINING ISSUE: FIRESTORE RULES
+================================================================================
+
+The console showed a "Missing or insufficient permissions" error. This is due
+to bugs in the Firestore security rules:
+
+ISSUES IN RULES:
+1. Missing explicit 'list' permission for collection queries
+2. Unescaped '.' in regex pattern - phone number contains dots which in regex
+   means "any character", making the match fail
+3. Can't use resource.data.phone in collection queries (timing issue)
+
+CORRECTED RULES TO DEPLOY:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.get('email', '') != '' &&
+             request.auth.token.email in get(/databases/$(database)/documents/settings/admin_users).data.allowed_emails;
+    }
+
+    function isPatient() {
+      return request.auth != null && request.auth.token.get('phone_number', '') != '';
+    }
+
+    function getCleanPhone() {
+      return request.auth.token.phone_number.replace('+91', '');
+    }
+
+    match /appointments/{appointmentId} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'phone', 'date', 'symptoms', 'consent', 'timestamp'])
+                    && request.resource.data.consent == true
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0;
+      
+      allow list: if isAdmin() || isPatient();
+      allow get: if isAdmin() || (isPatient() && resource.data.phone == request.auth.token.phone_number || resource.data.phone == getCleanPhone());
+      allow update, delete: if isAdmin();
+    }
+
+    match /patients/{patientId} {
+      allow list: if isAdmin() || isPatient();
+      allow read: if isAdmin() || (isPatient() && (
+                    patientId == request.auth.token.phone_number || 
+                    patientId == getCleanPhone() ||
+                    patientId.matches('^' + getCleanPhone() + '[_a-z0-9]+')
+                  ));
+      allow write: if isAdmin();
+
+      match /logs/{logId} {
+        allow list: if isAdmin() || isPatient();
+        allow read: if isAdmin() || (isPatient() && patientId.matches('^' + getCleanPhone() + '[_a-z0-9]+'));
+        allow write: if isAdmin();
+      }
+    }
+    
+  }
+}
+
+================================================================================
+                            TESTING STEPS
+================================================================================
+
+1. Deploy the corrected Firestore rules
+2. Clear browser cache/storage
+3. Log in to patient portal
+4. Check console for debug logs showing phone numbers being queried
+5. Verify appointments, medical records, and profile load correctly
+
+================================================================================
+                              END OF SUMMARY
+================================================================================
