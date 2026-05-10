@@ -758,7 +758,7 @@ const fetchBlogPosts = () => {
     };
 
     const script = document.createElement('script');
-    script.src = 'https://hopehomeocare.blogspot.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
+    script.src = 'https://blog.hopehomeocare.com/feeds/posts/default?alt=json-in-script&callback=handleBloggerFeed&max-results=3';
     document.head.appendChild(script);
 };
 
