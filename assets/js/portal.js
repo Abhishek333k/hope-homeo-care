@@ -291,6 +291,7 @@ document.getElementById('internal-booking-form')?.addEventListener('submit', asy
             date: date,
             time: time,
             symptoms: symptoms,
+            consent: true, // Required by security rules
             timestamp: serverTimestamp(),
             status: 'pending',
             medicalAdvice: ''

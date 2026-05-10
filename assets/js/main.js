@@ -501,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: dateInput.value,
                     time: "Requested via Homepage", // Public bookings are triage-first
                     symptoms: symptomsInput.value.trim(),
+                    consent: true, // Required by security rules
                     status: 'pending',
                     medicalAdvice: '', // Critical: Initialize for portal visibility
                     timestamp: serverTimestamp()
