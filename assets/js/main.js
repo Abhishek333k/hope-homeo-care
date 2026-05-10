@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: nameInput.value.trim(),
                     phone: window.sanitizePhone(phoneInput.value),
                     date: dateInput.value,
-                    time: "Requested via Homepage", // Public bookings are triage-first
+                    time: timeInput.value, // FIXED: Now passing the actual selected slot
                     symptoms: symptomsInput.value.trim(),
                     consent: true, // Required by security rules
                     status: 'pending',
