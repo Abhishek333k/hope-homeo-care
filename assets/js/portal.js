@@ -22,6 +22,38 @@ window.showToast = (message, type = 'success') => {
     }, 4000);
 };
 
+// --- GOOGLE CALENDAR SYNC ENGINE ---
+const generateGoogleCalendarUrl = (dateStr, timeStr) => {
+    if (!dateStr || dateStr.includes('N/A') || !timeStr || timeStr.includes('Requested')) return null;
+
+    try {
+        // Parse DD/MM/YYYY
+        const [day, month, year] = dateStr.split('/');
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':');
+        
+        hours = parseInt(hours);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+
+        const startDate = new Date(year, month - 1, day, hours, minutes);
+        const endDate = new Date(startDate.getTime() + 30 * 60000); // Default 30 mins
+
+        // Format to Google's required YYYYMMDDTHHmmss (Local Timezone Agnostic)
+        const pad = (n) => n < 10 ? '0' + n : n;
+        const formatGoogleDate = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+
+        const title = encodeURIComponent("Dr. Joshua Appointment - Hope Homeo Care");
+        const details = encodeURIComponent("Homeopathy Consultation with Dr. K. Nikhil Joshua.\\nPlease bring any previous medical reports.");
+        const location = encodeURIComponent("Hope Homeo Care, Mangalagiri, Andhra Pradesh");
+
+        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}&details=${details}&location=${location}`;
+    } catch (e) {
+        console.error("Calendar URL Error", e);
+        return null;
+    }
+};
+
 // --- STATE MANAGEMENT ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -136,6 +168,10 @@ window.loadTimeline = (targetName) => {
             'completed': { color: 'emerald', icon: 'task_alt', label: 'Completed' }
         }[app.status] || { color: 'slate', icon: 'info', label: app.status };
 
+        const dateStr = app.date || 'N/A';
+        const timeStr = app.time || 'Requested';
+        const calUrl = (app.status === 'confirmed') ? generateGoogleCalendarUrl(dateStr, timeStr) : null;
+
         let medicalAdviceHTML = '';
         if (app.medicalAdvice && app.medicalAdvice.trim() !== '') {
             medicalAdviceHTML = `
@@ -152,15 +188,28 @@ window.loadTimeline = (targetName) => {
             <div class="relative">
                 <div class="absolute -left-10 md:-left-12 mt-1.5 w-4 h-4 rounded-full bg-${statusConfig.color}-500 ring-4 ring-slate-50"></div>
                 <div class="bg-white border border-slate-100 p-5 md:p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2">
+                    <div class="flex justify-between items-start mb-4">
                         <div>
-                            <span class="text-xs font-black tracking-widest uppercase text-slate-400">${app.date}</span>
-                            <h3 class="text-lg font-bold text-slate-800">${app.symptoms}</h3>
+                            <h3 class="text-lg font-bold text-slate-800 mb-1">${app.symptoms}</h3>
+                            <div class="flex items-center gap-4 text-sm font-bold text-slate-800">
+                                <span class="flex items-center gap-1.5"><span class="material-icons-round text-teal-500 text-[18px]">calendar_today</span> ${dateStr}</span>
+                                <span class="flex items-center gap-1.5"><span class="material-icons-round text-teal-500 text-[18px]">schedule</span> ${timeStr}</span>
+                            </div>
                         </div>
                         <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-${statusConfig.color}-100 text-${statusConfig.color}-700 flex items-center gap-1">
                             <span class="material-icons-round text-[12px]">${statusConfig.icon}</span> ${statusConfig.label}
                         </span>
                     </div>
+
+                    ${calUrl ? `
+                    <div class="mt-4">
+                        <a href="${calUrl}" target="_blank" class="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs transition-colors border border-slate-200 shadow-sm">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" class="w-4 h-4" alt="Google Calendar">
+                            Add to Google Calendar
+                        </a>
+                    </div>
+                    ` : ''}
+
                     ${medicalAdviceHTML}
                 </div>
             </div>
