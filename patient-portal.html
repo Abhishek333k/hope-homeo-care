@@ -135,11 +135,12 @@
     <div id="book-appointment-view" role="dialog" aria-modal="true"
         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-navy-900/60 backdrop-blur-md p-4 transition-opacity opacity-0">
         <div id="book-appointment-view-content"
-            class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] hide-scrollbar transform scale-95 transition-all duration-500 p-6 md:p-8 relative my-auto">
+            class="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform scale-95 transition-all duration-500 relative my-auto">
             <button onclick="window.closeInternalBooking()"
                 class="absolute top-4 right-4 text-slate-400 hover:text-rose-500"><span aria-hidden="true"
                     class="material-icons-round">close</span></button>
-            <h3 class="text-xl font-bold text-navy-900 mb-1">Book New Session</h3>
+            <div class="p-6 md:p-8 overflow-y-auto hide-scrollbar flex-1">
+                <h3 class="text-xl font-bold text-navy-900 mb-1">Book New Session</h3>
             <p class="text-sm text-slate-500 mb-6">Booking for: <span id="booking-for-name"
                     class="font-bold text-navy-900"></span></p>
 
@@ -253,13 +254,16 @@
                     </div>
                 </div>
 
-                <!-- Anchored Submit Button -->
-                <button type="submit" id="int-book-submit"
-                    class="w-full mt-8 bg-navy-900 hover:bg-black text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl transform active:scale-[0.98]">
-                    Submit Request
-                </button>
-            </form>
-        </div>
+                    </form>
+                </div>
+
+                <div class="p-6 md:p-8 border-t border-slate-100 bg-slate-50 shrink-0 sticky bottom-0 z-10">
+                    <button form="int-booking-form" type="submit" id="int-book-submit"
+                        class="w-full bg-navy-900 hover:bg-teal-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span class="material-icons-round text-[20px]">send</span> Submit Request
+                    </button>
+                </div>
+            </div>
     </div>
 
     <script type="module" src="assets/js/portal.js"></script>
