@@ -43,7 +43,7 @@ const generateGoogleCalendarUrl = (dateStr, timeStr) => {
         const pad = (n) => n < 10 ? '0' + n : n;
         const formatGoogleDate = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
 
-        const title = encodeURIComponent("Dr. Joshua Appointment - Hope Homeo Care");
+        const title = encodeURIComponent("Dr. K. Nikhil Joshua Appointment - Hope Homeo Care");
         const details = encodeURIComponent("Homeopathy Consultation with Dr. K. Nikhil Joshua.\\nPlease bring any previous medical reports.");
         const location = encodeURIComponent("Hope Homeo Care, Mangalagiri, Andhra Pradesh");
 
