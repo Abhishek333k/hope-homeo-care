@@ -1055,3 +1055,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.prepend(crest);
     }
 });
+
+// --- URL COMMAND LISTENER (QR CODE ROUTING) ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'book') {
+        // Wait a brief moment for the page and listeners to initialize, then pop the modal
+        setTimeout(() => {
+            if (typeof window.openBookingModal === 'function') {
+                window.openBookingModal();
+            } else {
+                const bookingModal = document.getElementById('booking-modal');
+                if (bookingModal) bookingModal.classList.remove('hidden');
+            }
+            
+            // Clean up the URL so if they refresh, it doesn't pop up again
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
+    }
+});
